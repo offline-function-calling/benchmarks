@@ -1,0 +1,61 @@
+- description: Checks if the model can choose a function, call it, and handle its output.
+  vars:
+    message: file://scenarios/weather/question.md
+  assert:
+    - type: llm-rubric
+      description: Follows instructions
+      value: The output must contain one markdown code block labelled `function_call`.
+    - type: llm-rubric
+      description: Produces a valid function call
+      value: |
+        The `function_call` code block must have a valid JSON object of the following shape:
+
+        {
+          "id": any string or integer,
+          "function": a string,
+          "parameters": {
+            "place": a string
+          }
+        }
+    - type: llm-rubric
+      description: Chooses appropriate function 
+      value: The "function" in the function call must be `fetch_weather`.
+    - type: llm-rubric
+      description: Passes the correct parameters
+      value: The "place" parameter in the function call must be `Pune`.
+    - type: llm-rubric
+      description: Does not hallucinate function specifications or outputs
+      value: There must be no code blocks labelled `function_spec` or `function_output`.
+  metadata:
+    conversationId: weather
+- vars:
+    weather: file://scenarios/weather/output.md
+  assert:
+    - type: llm-rubric
+      description: Follows instructions
+      value: The output must contain only plain or markdown formatted text.
+    - type: llm-rubric
+      description: Conveys output in a user-friendly manner
+      value: The response must answer the user's question about the weather in a helpful and user-friendly manner, by using the function output received.
+    - type: llm-rubric
+      description: Does not hallucinate function specifications or outputs
+      value: There must be no code blocks labelled `function_spec` or `function_output`.
+  metadata:
+    conversationId: weather
+- vars:
+    message: file://scenarios/weather/followup.md
+  assert:
+    - type: llm-rubric
+      description: Follows instructions
+      value: The output must contain only plain or markdown formatted text.
+    - type: llm-rubric
+      description: Conveys output in a user-friendly manner
+      value: The response must answer the user's question about the weather in a helpful and user-friendly manner, by using the function output received.
+    - type: llm-rubric
+      description: Does not hallucinate function specifications or outputs
+      value: There must be no code blocks labelled `function_spec` or `function_output`.
+    - type: llm-rubric
+      description: Does not make unnecessary function calls
+      value: There must be no code blocks labelled `function_call`.
+  metadata:
+    conversationId: weather

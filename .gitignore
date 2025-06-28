@@ -1,0 +1,8 @@
+node_modules/
+output/
+
+evaluator-*.yaml
+*.log
+
+.env*
+!.env.example

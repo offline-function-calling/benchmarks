@@ -1,0 +1,8 @@
+{
+  "models": [
+    "ollama:chat:gemma3:27b",
+    "ollama:chat:gemma3:12b",
+    "ollama:chat:gemma3:4b",
+    "ollama:chat:gemma3:1b"
+  ]
+}

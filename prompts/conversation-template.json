@@ -1,0 +1,28 @@
+[
+  {% if prompt %}
+    {
+      "role": "user",
+      "content": {{ prompt | dump }}
+    },
+  {% endif %}
+  {% if functions %}
+    {
+      "role": "user",
+      "content": {{ functions | dump }}
+    },
+  {% endif %}
+  {% for completion in _conversation %}
+    {
+      "role": "user",
+      "content": {{ completion.input | dump }}
+    },
+    {
+      "role": "assistant",
+      "content": {{ completion.output | dump }}
+    },
+  {% endfor %}
+  {
+    "role": "user",
+    "content": "{{ message }}"
+  }
+]

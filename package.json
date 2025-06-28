@@ -1,0 +1,17 @@
+{
+  "name": "@offline-function-calling/benchmarks",
+  "version": "0.1.0",
+  "description": "A benchmarking suite for function calling in offline, multimodal LLMs.",
+  "homepage": "https://github.com/offline-function-calling/benchmarks#readme",
+  "license": "ISC",
+  "author": "Vedant Kulkarni <gamemaker0042@gmail.com>",
+  "type": "module",
+  "scripts": {
+    "benchmark": "promptfoo eval --grader google:gemini-2.5-flash --config evaluator.yaml",
+    "report": "promptfoo view"
+  },
+  "dependencies": {
+    "execa": "9.6.0",
+    "promptfoo": "0.115.4"
+  }
+}

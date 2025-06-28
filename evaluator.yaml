@@ -1,0 +1,16 @@
+description: Offline Function Calling Benchmarks
+
+prompts:
+  - id: file://prompts/conversation-template.json
+    label: multi-turn-conversation
+
+providers:
+  - ollama:chat:gemma3:4b
+
+defaultTest:
+  vars:
+    prompt: file://prompts/function-calling.md
+    functions: file://prompts/function-specs.md
+
+tests:
+  - file://tests/*.yaml
