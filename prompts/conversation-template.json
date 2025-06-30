@@ -23,6 +23,10 @@
   {% endfor %}
   {
     "role": "user",
+    {% if raw %}
+    "content": {{ message | dump }}
+    {% else %}
     "content": "{{ message }}"
+    {% endif %}
   }
 ]

@@ -1,31 +1,5 @@
 ```function_spec
 {
-	"name": "get_current_time",
-	"description": "Returns the current time in a human-readable format. Useful when the user provides a relative time and functions require an exact timestamp.",
-	"parameters": {
-		"type": "object",
-		"properties": {},
-		"required": []
-	},
-	"responses": [{
-		"type": "object",
-		"properties": {
-			"timestamp": {
-				"type": "string",
-				"format": "date-time",
-				"description": "The current time in the format: '%H:%M:%S %Z on %b %d, %Y'."
-			}
-		}
-	}],
-	"examples": [{
-		"prompt": "What is the time right now?",
-		"parameters": {},
-	}]
-}
-```
-
-```function_spec
-{
   "name": "fetch_weather",
   "description": "Fetches the current weather for a given location using the wttr.in API.",
   "parameters": {
