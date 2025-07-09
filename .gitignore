@@ -6,3 +6,6 @@ evaluator-*.yaml
 
 .env*
 !.env.example
+
+report.html
+report.json

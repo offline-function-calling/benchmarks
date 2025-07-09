@@ -1,0 +1,58 @@
+- vars:
+    functions: file://scenarios/dynamic-function-generation/functions.md
+    message: file://scenarios/dynamic-function-generation/questions/00-generate-function.md
+    raw: true
+    expected:
+      specs: 1
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The generated code and function specification must match the user's requirements for a 'calculate_lead_score' function and the JSON schema for function specifications.
+  metadata:
+    conversationId: dynamic-function-generation
+- vars:
+    functions: file://scenarios/dynamic-function-generation/functions.md
+    message: file://scenarios/dynamic-function-generation/questions/01-score-leads.md
+    raw: true
+    expected:
+      calls:
+        - function: calculate_lead_score
+          parameters:
+            job_title: Software Engineer
+            country: USA
+            company_size: 5000
+        - function: calculate_lead_score
+          parameters:
+            job_title: Product Manager
+            company_size: 500
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: dynamic-function-generation
+- vars:
+    functions: file://scenarios/dynamic-function-generation/functions.md
+    message: file://scenarios/dynamic-function-generation/outputs/00-scored-leads.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must present the calculated scores for both leads clearly to the user.
+  metadata:
+    conversationId: dynamic-function-generation

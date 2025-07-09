@@ -19,7 +19,7 @@ export const findFunctionCalls = (output, context) => {
 
   return {
     pass: counted === expected,
-    score: expected === 0 ? 0 : counted / expected,
+    score: expected === 0 ? 1 : counted / expected,
     reason: `Expected ${expected} function calls, got ${counted}.`,
   }
 }
@@ -30,7 +30,7 @@ export const findFunctionOutputs = (output, context) => {
 
   return {
     pass: counted === expected,
-    score: expected === 0 ? 0 : counted / expected,
+    score: expected === 0 ? 1 : counted / expected,
     reason: `Expected ${expected} function outputs, got ${counted}.`,
   }
 }
@@ -41,9 +41,59 @@ export const findFunctionSpecifications = (output, context) => {
 
   return {
     pass: counted === expected,
-    score: expected === 0 ? 0 : counted / expected,
+    score: expected === 0 ? 1 : counted / expected,
     reason: `Expected ${expected} function specifications, got ${counted}.`,
   }
+}
+
+const findMismatch = (expected, actual, path = '') => {
+  if (typeof expected !== typeof actual) return {
+    path, reason: 'Mismatched types', expected: typeof expected, actual: typeof actual
+  }
+
+  if (expected === null) return actual === null ? null : {
+    path, reason: 'Mismatched value', expected, actual
+  }
+
+  if (Array.isArray(expected)) {
+    if (!Array.isArray(actual)) return {
+      path, reason: 'Mismatched types', expected: 'array', actual: typeof actual
+    }
+
+    if (expected.length !== actual.length) return {
+      path, reason: 'Mismatched array length', expected: expected.length, actual: actual.length
+    }
+
+    for (let i = 0; i < expected.length; i++) {
+      const mismatch = findMismatch(expected[i], actual[i], `${path}[${i}]`)
+      if (mismatch) return mismatch
+    }
+
+    return null
+  }
+
+  if (typeof expected === 'object') {
+    const expectedKeys = Object.keys(expected).sort()
+    const actualKeys = Object.keys(actual).sort()
+
+    if (JSON.stringify(expectedKeys) !== JSON.stringify(actualKeys)) {
+      const missingKey = expectedKeys.find(k => !actualKeys.includes(k))
+      if (missingKey) return {
+        path, reason: `Missing parameter '${missingKey}'`, expected: `'${missingKey}' to exist`, actual: 'Parameter not found'
+      }
+    }
+
+    for (const key of expectedKeys) {
+      const newPath = path ? `${path}.${key}` : key
+      const mismatch = findMismatch(expected[key], actual[key], newPath)
+      if (mismatch) return mismatch
+    }
+
+    return null
+  }
+
+  if (expected !== actual) return { path, reason: 'Mismatched value', expected, actual }
+  return null
 }
 
 export const matchFunctionCalls = (output, context) => {
@@ -55,84 +105,89 @@ export const matchFunctionCalls = (output, context) => {
     }
   }
 
-  const calls = findCodeBlocks('function_call', output).map(JSON.parse)
-  if (expected.length === 0) {
-    return {
-      pass: calls.length === 0, score: calls.length === 0 ? 1 : 0,
-      reason: `Expected 0 function calls, got ${calls.length}.`
-    }
-  }
-
-  let matchedCount = 0
-  const usedExpectedIndices = new Set()
-  const unmatchedCalls = []
   const parseErrors = []
-
-  for (const call of calls) {
+  const calls = findCodeBlocks('function_call', output).map(block => {
     try {
-      const matchingExpectedIndex = expected.findIndex((expectedCall, index) => {
-        if (usedExpectedIndices.has(index)) return false
-        if (call.function !== expectedCall.function) return false
-        if (!call.parameters && !expectedCall.parameters) return true
-        if (!call.parameters || !expectedCall.parameters) return false
+      return JSON.parse(block)
+    } catch (error) {
+      parseErrors.push(`Failed to parse function call block: ${error.message}`)
+      return null
+    }
+  }).filter(call => call !== null)
 
-        const actualParams = call.parameters
-        const expectedParams = expectedCall.parameters
-        for (const [key, value] of Object.entries(expectedParams)) {
-          if (actualParams[key] !== value) return false
-        }
-
-        // disallow extra parameters
-        // for (const key of Object.keys(actualParams)) {
-        //   if (!(key in expectedParams)) return false
-        // }
-
-        return true
-      })
-
-      if (matchingExpectedIndex !== -1) {
-        matchedCount++
-        usedExpectedIndices.add(matchingExpectedIndex)
-      } else {
-        unmatchedCalls.push(call)
-      }
-    } catch (error) { 
-      parseErrors.push(`Failed to parse function call: ${error.message}`)
+  if (expected.length === 0) {
+    const pass = calls.length === 0
+    return {
+      pass, score: pass ? 1 : 0,
+      reason: `Expected 0 function calls, but found ${calls.length}.`
+        + (calls.length > 0 ? ` Found: ${calls.map(c => c.function).join(', ')}.` : '')
     }
   }
 
-  const score = expected.length === 0 ? 0 : matchedCount / expected.length
+  const usedExpectedIndices = new Set()
+  const usedActualIndices = new Set()
+  
+  for (let i = 0; i < calls.length; i++) {
+    for (let j = 0; j < expected.length; j++) {
+      if (usedActualIndices.has(i) || usedExpectedIndices.has(j)) continue
+      if (findMismatch(expected[j], calls[i]) === null) {
+        usedActualIndices.add(i)
+        usedExpectedIndices.add(j)
+        break
+      }
+    }
+  }
+
+  const matchedCount = usedExpectedIndices.size
   const pass = matchedCount === expected.length && calls.length === expected.length
+  const score = expected.length === 0 ? 1 : matchedCount / expected.length
 
   let reason
   if (pass) {
-    reason = `All ${expected.length} function calls match expected specifications.`
+    reason = `All ${expected.length} function call(s) matched expected specifications.`
   } else {
-    let reasonParts = []
+    const reasonParts = []
+    reasonParts.push(`${matchedCount} of ${expected.length} expected calls matched (found ${calls.length} total calls).`)
+    
+    const parameterMismatches = []
+    
+    let remainingUnmet = expected.filter((_, j) => !usedExpectedIndices.has(j))
+    let remainingUnmatched = calls.filter((_, i) => !usedActualIndices.has(i))
 
-    if (matchedCount === 0) {
-      reasonParts.push(`No function calls matched`)
-    } else {
-      reasonParts.push(`${matchedCount} out of ${expected.length} function calls matched`)
+    const newRemainingUnmet = []
+    
+    remainingUnmet.forEach(unmet => {
+      const matchIndex = remainingUnmatched.findIndex(unmatched => unmet.function === unmatched.function)
+      if (matchIndex !== -1) {
+        const matchedCall = remainingUnmatched[matchIndex]
+        const mismatchDetails = findMismatch(unmet, matchedCall)
+        if (mismatchDetails) {
+            const { path, reason: mismatchReason, expected: expectedVal, actual: actualVal } = mismatchDetails
+            parameterMismatches.push(`Mismatched parameter for '${unmet.function}': ${mismatchReason} at '${path}' (expected: ${JSON.stringify(expectedVal)}, got: ${JSON.stringify(actualVal)})`)
+        }
+        remainingUnmatched.splice(matchIndex, 1)
+      } else {
+        newRemainingUnmet.push(unmet)
+      }
+    })
+    
+    remainingUnmet = newRemainingUnmet
+
+    if (parameterMismatches.length > 0) {
+      reasonParts.push(`Mismatches: ${parameterMismatches.join('; ')}.`);
     }
-
-    if (calls.length !== expected.length) {
-      reasonParts.push(`Expected ${expected.length} function calls, got ${calls.length}`)
+    if (remainingUnmet.length > 0) {
+      const unmetStr = remainingUnmet.map(e => `'${e.function}'`).join(', ')
+      reasonParts.push(`Expected calls not made: ${unmetStr}.`);
     }
-
-    if (unmatchedCalls.length > 0) {
-      const unmatchedDetails = unmatchedCalls.map(call => {
-        const expectedFunctions = expected.map(e => e.function).join(', ')
-        return `'${call.function}' (expected: ${expectedFunctions})`
-      }).join(', ')
-      reasonParts.push(`Unmatched calls: ${unmatchedDetails}`)
+    if (remainingUnmatched.length > 0) {
+      const unexpectedStr = remainingUnmatched.map(c => `'${c.function}'`).join(', ')
+      reasonParts.push(`Unexpected calls made: ${unexpectedStr}.`);
     }
-
     if (parseErrors.length > 0) {
-      reasonParts.push(`Parse errors: ${parseErrors.join('; ')}`)
+      reasonParts.push(`Parse errors: ${parseErrors.join('; ')}.`)
     }
-
-    reason = reasonParts.join('. ') + '.'
+    reason = reasonParts.join(' ')
   }
 
   return { pass, score, reason }

@@ -2,7 +2,7 @@ description: Offline Function Calling Benchmarks
 
 prompts:
   - id: file://prompts/conversation-template.json
-    label: function-calling-benchmarks
+    label: function-calling
 
 providers:
   - ollama:chat:gemma3:1b

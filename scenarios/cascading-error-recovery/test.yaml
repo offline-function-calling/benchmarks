@@ -1,0 +1,77 @@
+- vars:
+    functions: file://scenarios/cascading-error-recovery/functions.md
+    message: file://scenarios/cascading-error-recovery/questions/00-get-user.md
+    expected:
+      calls:
+        - function: get_user_from_cache
+          parameters:
+            user_id: u-999
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: cascading-error-recovery
+- vars:
+    functions: file://scenarios/cascading-error-recovery/functions.md
+    message: file://scenarios/cascading-error-recovery/outputs/00-cache-error.md
+    raw: true
+    expected:
+      calls:
+        - function: get_user_from_database
+          parameters:
+            user_id: u-999
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+    - type: llm-rubric
+      value: The model must explain that the cache lookup failed. It must then fallback to performing a database lookup using another function.
+  metadata:
+    conversationId: cascading-error-recovery
+- vars:
+    functions: file://scenarios/cascading-error-recovery/functions.md
+    message: file://scenarios/cascading-error-recovery/outputs/01-db-error.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: llm-rubric
+      value: The model must explain that the database lookup also failed. It must then ask the user for their username to try the final available tool (`get_user_from_ldap`).
+  metadata:
+    conversationId: cascading-error-recovery
+- vars:
+    functions: file://scenarios/cascading-error-recovery/functions.md
+    message: file://scenarios/cascading-error-recovery/questions/01-provide-username.md
+    expected:
+      calls:
+        - function: get_user_from_ldap
+          parameters:
+            username: user999
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: cascading-error-recovery

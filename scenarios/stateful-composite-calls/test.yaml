@@ -1,0 +1,55 @@
+- vars:
+    functions: file://scenarios/stateful-composite-calls/functions.md
+    message: file://scenarios/stateful-composite-calls/questions/00-move-document.md
+    expected:
+      calls:
+        - function: get_document_status
+          parameters:
+            doc_id: DOC-001
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: stateful-composite-calls
+- vars:
+    functions: file://scenarios/stateful-composite-calls/functions.md
+    message: file://scenarios/stateful-composite-calls/outputs/00-document-status.md
+    raw: true
+    expected:
+      calls:
+        - function: approve_document
+          parameters:
+            doc_id: DOC-001
+            approver_id: approver-123
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: stateful-composite-calls
+- vars:
+    functions: file://scenarios/stateful-composite-calls/functions.md
+    message: file://scenarios/stateful-composite-calls/outputs/01-document-approved.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must confirm to the user that the document has been approved successfully.
+  metadata:
+    conversationId: stateful-composite-calls

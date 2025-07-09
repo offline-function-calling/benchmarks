@@ -1,0 +1,36 @@
+- vars:
+    functions: file://scenarios/parameter-transformation/functions.md
+    message: file://scenarios/parameter-transformation/questions/00-schedule-backup.md
+    expected:
+      calls:
+        - function: schedule_backup
+          parameters:
+            database_name: orders
+            schedule_cron: "0 2 * * *"
+            retention_days: 14
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: parameter-transformation
+- vars:
+    functions: file://scenarios/parameter-transformation/functions.md
+    message: file://scenarios/parameter-transformation/outputs/00-backup-scheduled.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must confirm that the backup job has been scheduled successfully, referencing the job ID from the function output.
+  metadata:
+    conversationId: parameter-transformation

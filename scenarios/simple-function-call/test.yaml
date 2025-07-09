@@ -1,0 +1,35 @@
+- vars:
+    functions: file://scenarios/simple-function-call/functions.md
+    message: file://scenarios/simple-function-call/questions/00-get-pr-status.md
+    expected:
+      calls:
+        - function: get_pr_details
+          parameters:
+            repo: frontend
+            pr_number: 1138
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: simple-function-call
+- vars:
+    functions: file://scenarios/simple-function-call/functions.md
+    message: file://scenarios/simple-function-call/outputs/00-pr-details.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must summarize the PR status in a user-friendly way using the provided function output.
+  metadata:
+    conversationId: simple-function-call

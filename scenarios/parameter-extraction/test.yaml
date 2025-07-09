@@ -1,0 +1,38 @@
+- vars:
+    functions: file://scenarios/parameter-extraction/functions.md
+    message: file://scenarios/parameter-extraction/questions/00-create-deployment.md
+    expected:
+      calls:
+        - function: create_deployment
+          parameters:
+            app_name: analytics-service
+            version: v2.1.0
+            replicas: 3
+            memory_mb: 512
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: parameter-extraction
+- vars:
+    functions: file://scenarios/parameter-extraction/functions.md
+    message: file://scenarios/parameter-extraction/outputs/00-deployment-created.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must confirm that the deployment has started, referencing the deployment ID from the function output.
+  metadata:
+    conversationId: parameter-extraction
+

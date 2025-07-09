@@ -1,0 +1,55 @@
+- vars:
+    functions: file://scenarios/simple-parallel-calls/functions.md
+    message: file://scenarios/simple-parallel-calls/questions/00-get-profile.md
+    expected:
+      calls:
+        - function: crm_get_customer
+          parameters:
+            customer_id: CUST-789
+        - function: billing_get_invoices
+          parameters:
+            customer_id: CUST-789
+        - function: support_get_tickets
+          parameters:
+            customer_id: CUST-789
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: simple-parallel-calls
+- vars:
+    functions: file://scenarios/simple-parallel-calls/functions.md
+    message: file://scenarios/simple-parallel-calls/outputs/00-partial-results.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must indicate somehow that it the model is waiting for a function call to complete, with bonus points if it includes a partial summary based on the outputs received so far.
+  metadata:
+    conversationId: simple-parallel-calls
+- vars:
+    functions: file://scenarios/simple-parallel-calls/functions.md
+    message: file://scenarios/simple-parallel-calls/outputs/01-remaining-results.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must provide a comprehensive, user-friendly summary of the customer's profile using all the merged data.
+  metadata:
+    conversationId: simple-parallel-calls

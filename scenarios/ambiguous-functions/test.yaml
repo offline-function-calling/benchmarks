@@ -1,0 +1,36 @@
+- vars:
+    functions: file://scenarios/ambiguous-functions/functions.md
+    message: file://scenarios/ambiguous-functions/questions/00-find-headphones.md
+    expected:
+      calls:
+        - function: search_products
+          parameters:
+            query: wireless headphones
+            price_range: [0, 100]
+            rating_min: 4.0
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+  metadata:
+    conversationId: ambiguous-functions
+- vars:
+    functions: file://scenarios/ambiguous-functions/functions.md
+    message: file://scenarios/ambiguous-functions/outputs/00-headphone-results.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The response must present the found headphone options to the user in a helpful, readable format.
+  metadata:
+    conversationId: ambiguous-functions
