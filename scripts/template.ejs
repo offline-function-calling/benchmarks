@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline Function Calling Leaderboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script> tailwind.config = { darkMode: 'media' } </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" media="(prefers-color-scheme: light)">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .score-bar {
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+      height: 4px;
+      border-radius: 2px;
+    }
+    
+    .rank-1 {
+      background: #fbbf24;
+      color: #92400e;
+    }
+    
+    .rank-2 {
+      background: #9ca3af;
+      color: #374151;
+    }
+    
+    .rank-3 {
+      background: #fb923c;
+      color: #9a3412;
+    }
+    
+    .table-row:hover {
+      background-color: #f8fafc;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+    
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    
+    .status-pass {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .status-fail {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .status-pass {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+      
+      .status-fail {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #000;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+    }
+  </style>
+</head>
+<body class="bg-white dark:bg-black text-gray-900 dark:text-white min-h-screen">
+  <!-- Header -->
+  <div class="max-w-6xl mx-auto px-6 py-16">
+    <div class="text-center mb-16">
+      <div class="flex items-center justify-center gap-4 mb-6">
+        <h1 class="text-5xl md:text-6xl font-black text-gray-900 dark:text-white">
+          Offline Function Calling Leaderboard
+        </h1>
+      </div>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+        A comprehensive evaluation of offline, multimodal, large language models' function calling capabilities across various scenarios.
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-6 mt-8 text-sm text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <span>Evaluation ID: <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs"><%= evalId %></code></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+          <span>Generated: <span><%= new Date(timestamp).toLocaleString() %></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+      <div class="text-center">
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.providerCount %></div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Providers</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= formatNum(stats.avgScore, 1) %></div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Avg Score</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.totalTests %></div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><span><%= formatNum(stats.avgLatency, 0) %></span>ms</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Avg Latency</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-black border-b border-gray-200 dark:border-gray-700">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pass Rate</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <% sortedProviders.forEach((p, index) => { %>
+              <%
+                const rank = index + 1
+                const score = p.metrics?.score || 0
+                let rankClass = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                if (rank === 1) rankClass = 'rank-1'
+                else if (rank === 2) rankClass = 'rank-2'
+                else if (rank === 3) rankClass = 'rank-3'
+                
+                const maxPossibleScore = sortedProviders[0]?.metrics?.score > 0 ? sortedProviders[0].metrics.score * 1.05 : 20
+                const scorePercentage = Math.min(score / maxPossibleScore * 100, 100)
+              %>
+              <tr class="table-row transition-colors">
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm <%= rankClass %>">
+                    <%= rank %>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider %></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="space-y-2">
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
+                      <div class="score-bar h-full rounded-full transition-all duration-1000" style="width: <%= scorePercentage %>%"></div>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white"><%= formatNum(score, 1) %></div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= formatNum(p.passRate, 1) %>%</div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center gap-4 text-sm">
+                    <span class="text-green-600 dark:text-green-400 font-medium"><%= p.metrics?.testPassCount || 0 %></span>
+                    <span class="text-red-600 dark:text-red-400 font-medium"><%= p.metrics?.testFailCount || 0 %></span>
+                    <span class="text-yellow-600 dark:text-yellow-400 font-medium"><%= p.metrics?.testErrorCount || 0 %></span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <div class="font-mono text-sm text-gray-900 dark:text-gray-300"><%= formatNum(p.avgLatency, 0) %>ms</div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button onclick="showDetails('<%= p.provider %>')" 
+                      class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-16 text-sm text-gray-400 dark:text-gray-500">
+      <p>Generated with Node.js and EJS</p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="details-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white dark:bg-black rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
+      <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+        <div>
+          <h2 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h2>
+          <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Detailed test case analysis</p>
+        </div>
+        <button onclick="hideDetails()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+      <div id="modal-body" class="p-6 overflow-y-auto flex-1 space-y-6">
+        <!-- Test case details will be injected here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const testCasesByProvider = <%- JSON.stringify(providerTestCases) %>
+
+    function escapeHtml(unsafe) {
+      if (!unsafe) return ''
+      return unsafe
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, '"')
+        .replace(/'/g, "'")
+    }
+
+    function formatFunctionCall(call) {
+      if (!call) return '<em class="text-gray-500">None</em>'
+      return `<div class="space-y-3">
+        <div><strong class="text-gray-700 dark:text-gray-300">Function:</strong> <code class="bg-gray-100 dark:bg-black px-2 py-1 rounded text-sm font-mono">${escapeHtml(call.function)}</code></div>
+        <div><strong class="text-gray-700 dark:text-gray-300">Parameters:</strong></div>
+        <pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-json text-xs">${escapeHtml(JSON.stringify(call.parameters, null, 2))}</code></pre>
+      </div>`
+    }
+
+    function extractOutput(responseText) {
+      if (!responseText) return '<em class="text-gray-500">No output or invalid format.</em>'
+      
+      let match = responseText.match(/\`\`\`function_call\n([\s\S]*?)\n\`\`\`/)
+      if (match && match[1]) {
+        try {
+          return formatFunctionCall(JSON.parse(match[1]))
+        } catch (e) {
+          return `<div class="text-red-600 font-semibold">Error parsing function call JSON:</div>
+              <pre class="bg-gray-50 dark:bg-black rounded-lg mt-2"><code class="language-text text-xs">${escapeHtml(match[1])}</code></pre>`
+        }
+      }
+      
+      return `<pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-markdown text-xs">${escapeHtml(responseText)}</code></pre>`
+    }
+
+    function unslugify(slug) {
+      if (!slug) return 'General';
+      return slug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    
+    function showDetails(providerId) {
+      const cases = testCasesByProvider[providerId] || []
+      const modal = document.getElementById('details-modal')
+      const modalTitle = document.getElementById('modal-title')
+      const modalBody = document.getElementById('modal-body')
+      
+      modalTitle.textContent = `${providerId}`
+      modalBody.innerHTML = ''
+
+      if (cases.length === 0) {
+        modalBody.innerHTML = '<div class="text-center py-12 text-gray-500">No detailed test cases found for this provider.</div>'
+      } else {
+        const groupedCases = cases.reduce((acc, c) => {
+          const conversationId = c.testCase?.metadata?.conversationId || 'general';
+          if (!acc[conversationId]) {
+            acc[conversationId] = [];
+          }
+          acc[conversationId].push(c);
+          return acc;
+        }, {});
+
+        const sortedScenarioKeys = Object.keys(groupedCases).sort();
+
+        sortedScenarioKeys.forEach(scenarioId => {
+          const scenarioTitle = unslugify(scenarioId);
+          const scenarioCases = groupedCases[scenarioId];
+
+          const scenarioWrapper = document.createElement('div');
+          
+          const scenarioTitleEl = document.createElement('h3');
+          scenarioTitleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4';
+          scenarioTitleEl.textContent = scenarioTitle;
+          scenarioWrapper.appendChild(scenarioTitleEl);
+
+          const cardsContainer = document.createElement('div');
+          cardsContainer.className = 'space-y-4';
+          scenarioWrapper.appendChild(cardsContainer);
+          
+          scenarioCases.forEach((c, index) => {
+            const success = c.success
+            const cardClass = success 
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30' 
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30'
+            
+            const statusBadge = success
+              ? '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-pass">✓ PASS</span>'
+              : '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-fail">✗ FAIL</span>'
+
+            const expectedCalls = c.testCase.vars.expected?.calls || []
+            let expectedHtml = '<em class="text-gray-500">No function call expected.</em>'
+            if (expectedCalls.length > 0) {
+              expectedHtml = expectedCalls.map(formatFunctionCall).join('<hr class="my-4 border-gray-200 dark:border-gray-600">')
+            }
+
+            const actualHtml = extractOutput(c.response?.output)
+            const formattedMessage = escapeHtml(c.testCase.vars.message)
+
+            const card = document.createElement('div')
+            card.className = `rounded-xl border ${cardClass} p-6`
+            card.innerHTML = `
+              <div class="flex items-start gap-4">
+                <div class="flex-grow space-y-4">
+                  <div>
+                    <div class="flex-shrink-0 my-2">${statusBadge}</div>
+                    <div class="max-w-screen overflow-scroll bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">User Prompt:</div>
+                      <pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-markdown text-xs">${formattedMessage}</code></pre>
+                    </div>
+                  </div>
+                  
+                  <div class="grid lg:grid-cols-2 gap-4">
+                    <div class="flex flex-col space-y-2">
+                      <h5 class="font-medium text-gray-700 dark:text-gray-300">Expected Output</h5>
+                      <div class="max-w-screen overflow-scroll flex-1 bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
+                        ${expectedHtml}
+                      </div>
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                      <h5 class="font-medium text-gray-700 dark:text-gray-300">Actual Output</h5>
+                      <div class="max-w-screen overflow-scroll flex-1 bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
+                        ${actualHtml}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  ${!success ? `
+                  <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg p-4">
+                    <h5 class="font-medium text-red-800 dark:text-red-400 mb-2">Failure Reason</h5>
+                    <p class="text-sm text-red-700 dark:text-red-300">${escapeHtml(c.gradingResult?.reason || c.error || 'No reason provided.')}</p>
+                  </div>` : ''}
+                </div>
+              </div>
+            `
+            cardsContainer.appendChild(card)
+          });
+          modalBody.appendChild(scenarioWrapper);
+        });
+      }
+
+      modal.classList.remove('hidden')
+      document.body.style.overflow = 'hidden'
+      setTimeout(() => hljs.highlightAll(), 100)
+    }
+
+    function hideDetails() {
+      const modal = document.getElementById('details-modal')
+      modal.classList.add('hidden')
+      document.body.style.overflow = ''
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') hideDetails()
+    })
+
+    document.getElementById('details-modal').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) hideDetails()
+    })
+
+    window.showDetails = showDetails
+    window.hideDetails = hideDetails
+
+    document.addEventListener('DOMContentLoaded', () => {
+      hljs.highlightAll()
+    })
+  </script>
+</body>
+</html>
