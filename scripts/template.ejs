@@ -160,14 +160,14 @@
     </div>
 
     <!-- Leaderboard -->
-    <div class="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+    <div class="bg-white dark:bg-black overflow-hidden shadow-sm">
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-gray-50 dark:bg-black border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
+              <!-- <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th> -->
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pass Rate</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency</th>
@@ -194,16 +194,16 @@
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider %></div>
+                  <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider.replace('ollama:chat:', '') %></div>
                 </td>
-                <td class="px-6 py-4">
-                  <div class="space-y-2">
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
-                      <div class="score-bar h-full rounded-full transition-all duration-1000" style="width: <%= scorePercentage %>%"></div>
-                    </div>
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white"><%= formatNum(score, 1) %></div>
-                  </div>
-                </td>
+                <!-- <td class="px-6 py-4"> -->
+                  <!-- <div class="space-y-2"> -->
+                    <!-- <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden"> -->
+                      <!-- <div class="score-bar h-full rounded-full transition-all duration-1000" style="width: <%= scorePercentage %>%"></div> -->
+                    <!-- </div> -->
+                    <!-- <div class="text-sm font-semibold text-gray-900 dark:text-white"><%= formatNum(score, 1) %></div> -->
+                  <!-- </div> -->
+                <!-- </td> -->
                 <td class="px-6 py-4 text-center">
                   <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= formatNum(p.passRate, 1) %>%</div>
                 </td>
@@ -219,8 +219,8 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button onclick="showDetails('<%= p.provider %>')" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
-                    View Details
+                      class="underline text-gray-900 dark:text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                    View
                   </button>
                 </td>
               </tr>
@@ -228,11 +228,6 @@
           </tbody>
         </table>
       </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="text-center mt-16 text-sm text-gray-400 dark:text-gray-500">
-      <p>Generated with Node.js and EJS</p>
     </div>
   </div>
 
@@ -308,7 +303,7 @@
       const modalTitle = document.getElementById('modal-title')
       const modalBody = document.getElementById('modal-body')
       
-      modalTitle.textContent = `${providerId}`
+      modalTitle.textContent = providerId.replace('ollama:chat:', '')
       modalBody.innerHTML = ''
 
       if (cases.length === 0) {
