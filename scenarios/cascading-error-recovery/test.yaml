@@ -65,7 +65,6 @@
   metadata:
     conversationId: cascading-error-recovery
     parameters:
-      - error-handling
       - missing-parameters
       - function-selection
     context: "The database lookup also fails. The model must handle a second error, realize the next tool requires different information, and ask the user for it."

@@ -1,0 +1,81 @@
+- vars:
+    functions: file://scenarios/handling-missing-information/functions.md
+    message: file://scenarios/handling-missing-information/questions/00-schedule-and-book.md
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The model must not call any function. It should explain that it cannot book a conference room because it lacks the necessary tool, but it may offer to create the calendar event.
+  metadata:
+    conversationId: handling-missing-information
+    parameters:
+      - missing-functions
+      - function-selection
+    context: "The user asks the model to perform an action (booking a room) for which no function is available. The model must recognize this limitation."
+- vars:
+    functions: file://scenarios/handling-missing-information/functions.md
+    message: file://scenarios/handling-missing-information/questions/01-send-email-instead.md
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The model must not call a function. It should identify the `send_email` tool but recognize that it lacks required parameters (recipient) and must ask the user for this information.
+  metadata:
+    conversationId: handling-missing-information
+    parameters:
+      - missing-parameters
+      - function-selection
+    context: "Following the new instruction, the model must select a new tool but identify that it is missing the required parameters to execute the call."
+- vars:
+    functions: file://scenarios/handling-missing-information/functions.md
+    message: file://scenarios/handling-missing-information/questions/02-provide-email-details.md
+    expected:
+      calls:
+        - function: send_email
+          parameters:
+            recipient_email: bookings@corporate.com
+            # the subject and body are left to the LLM to write
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: javascript
+      value: file://scripts/utilities.js:matchFunctionCalls
+    - type: llm-rubric
+      value: The model must call the `send_email` function with the appropriate email, subject and body.
+  metadata:
+    conversationId: handling-missing-information
+    parameters:
+      - context-application
+      - function-calling
+      - parameter-extraction
+    context: "The user provides the final pieces of information. The model must now synthesize the entire conversation to make a single, correct function call."
+- vars:
+    functions: file://scenarios/handling-missing-information/functions.md
+    message: file://scenarios/handling-missing-information/outputs/00-email-sent.md
+    raw: true
+  assert:
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionCalls
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionOutputs
+    - type: javascript
+      value: file://scripts/utilities.js:findFunctionSpecifications
+    - type: llm-rubric
+      value: The model must understand the successful function output and confirm to the user that the email has been sent as requested.
+  metadata:
+    conversationId: handling-missing-information
+    parameters:
+      - output-understanding
+    context: "After the function call succeeds, the model must interpret the result and provide a helpful confirmation to the user, concluding the task."
