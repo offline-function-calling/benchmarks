@@ -3,8 +3,6 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import ejs from 'ejs'
 
-// Assuming the report.json is in a parent directory named 'data' or similar
-// Adjust the path if necessary. The user provided it as '../report.json'
 import data from '../report.json' with { type: 'json' }
 
 const __filename = fileURLToPath(import.meta.url)
