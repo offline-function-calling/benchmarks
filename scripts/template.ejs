@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Offline Function Calling Leaderboard</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script> tailwind.config = { darkMode: 'media' } </script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" media="(prefers-color-scheme: light)">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <style>
@@ -71,6 +71,12 @@
       border: 1px solid #fecaca;
     }
 
+    .status-error {
+      background: #fefce8;
+      color: #ca8a04;
+      border: 1px solid #fef08a;
+    }
+
     @media (prefers-color-scheme: dark) {
       .status-pass {
         background: rgba(16, 185, 129, 0.1);
@@ -82,6 +88,12 @@
         background: rgba(239, 68, 68, 0.1);
         color: #ef4444;
         border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+
+      .status-error {
+        background: rgba(234, 179, 8, 0.1);
+        color: #eab308;
+        border: 1px solid rgba(234, 179, 8, 0.2);
       }
     }
 
@@ -148,15 +160,15 @@
       </div>
       <div class="text-center">
         <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.uniqueParametersCount %></div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">Unique Capabilities</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Tested Parameters</div>
       </div>
       <div class="text-center">
         <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.totalTests %></div>
         <div class="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><span><%= formatNum(stats.avgLatency, 0) %></span> ms</div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">Average Latency<sup>*</sup></div>
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><span><%= formatNum(stats.avgLatency / 1000, 2) %></span></div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Average Latency (sec)</div>
       </div>
     </div>
 
@@ -168,19 +180,17 @@
             <tr>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
-              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pass Rate</th>
-              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capability Score</th>
-              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
-              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency<sup>*</sup></th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capability Score <sup>*</sup></th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency <sup>^</sup></th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <%
               const getScoreColor = (score) => {
-                if (score >= 0.8) return '#10b981';
-                if (score > 0) return '#f59e0b';
-                return '#ef4444';
+                if (score >= 0.8) return '#10b981'
+                if (score >= 0.5) return '#f59e0b'
+                return '#ef4444'
               }
             %>
             <% sortedProviders.forEach((p, index) => { %>
@@ -190,7 +200,7 @@
                 if (rank === 1) rankClass = 'rank-1'
                 else if (rank === 2) rankClass = 'rank-2'
                 else if (rank === 3) rankClass = 'rank-3'
-                const avgParamScore = p.avgParamScore || 0;
+                const capabilityScore = p.capabilityScore || 0
               %>
               <tr class="table-row transition-colors">
                 <td class="px-6 py-4 text-center">
@@ -198,35 +208,25 @@
                     <%= rank %>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-4">
                   <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider.replace('ollama:chat:', '') %></div>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= formatNum(p.passRate, 1) %>%</div>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-center gap-2">
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                       <div class="h-2.5 rounded-full"
-                           style="width: <%= avgParamScore * 100 %>%; background-color: <%= getScoreColor(avgParamScore) %>;">
+                           style="width: <%= capabilityScore * 100 %>%; background-color: <%= getScoreColor(capabilityScore) %>;">
                       </div>
                     </div>
-                    <span class="text-sm font-semibold w-10 text-right"><%= formatNum(avgParamScore, 2) %></span>
+                    <span class="text-sm font-semibold w-10 text-right"><%= formatNum(capabilityScore, 2) %></span>
                   </div>
                 </td>
                 <td class="px-6 py-4 text-center">
-                  <div class="flex items-center justify-center gap-4 text-sm">
-                    <span class="text-green-600 dark:text-green-400 font-medium"><%= p.metrics?.testPassCount || 0 %></span>
-                    <span class="text-red-600 dark:text-red-400 font-medium"><%= p.metrics?.testFailCount || 0 %></span>
-                    <span class="text-yellow-600 dark:text-yellow-400 font-medium"><%= p.metrics?.testErrorCount || 0 %></span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <div class="font-mono text-sm text-gray-900 dark:text-gray-300"><%= formatNum(p.avgLatency, 0) %> ms</div>
+                  <div class="font-mono text-sm text-gray-900 dark:text-gray-300"><%= formatNum(p.avgLatency / 1000, 4, 2) %> sec</div>
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button onclick="showDetails('<%= p.provider %>')"
-                      class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium py-1.5 px-4 rounded-lg transition-colors text-sm">
+                      class="bg-gray-300 dark:bg-gray-200 hover:bg-gray-400 dark:hover:bg-gray-100 text-gray-800 font-medium py-1.5 px-4 rounded-lg transition-colors text-sm hover:cursor-pointer">
                     View Details
                   </button>
                 </td>
@@ -238,15 +238,16 @@
     </div>
 
     <footer class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 text-center">
-      <div class="max-w-3xl mx-auto space-y-4 text-xs text-gray-500 dark:text-gray-400">
-          <p><sup>*</sup>These tests were run using Ollama on an Apple Mac Mini with 24G of RAM and an M4 Pro chip.</p>
+      <div class="max-w-3xl mx-auto space-y-4 text-xs/5 text-gray-500 dark:text-gray-400">
+          <span><strong><sup>*</sup>Capability Score</strong>: A weighted, holistic score from 0 to 1 that balances multiple aspects of model performance. It is calculated as: (Pass Rate Score * 45%) + (Parameter Score * 45%) + (Latency Score * 10%). Each component is normalized before averaging. The Parameter Score is visible in the details modal, and the Latency Score is based on a model's speed relative to others in the test.</span>
+          <p><strong><sup>^</sup>Latency</strong>: These tests were run using Ollama on an Apple Mac Mini with 24G of RAM and an M4 Pro chip.</p>
       </div>
     </footer>
   </div>
 
   <!-- Modal -->
   <div id="details-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-white dark:bg-black rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
+    <div class="bg-white dark:bg-black rounded-2xl shadow-xl w-full max-w-6xl max-h-full flex flex-col border border-gray-200 dark:border-gray-700">
       <header class="px-6 py-4 flex justify-between items-center flex-shrink-0">
         <h2 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h2>
         <button onclick="hideDetails()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -255,33 +256,33 @@
           </svg>
         </button>
       </header>
-      <div id="modal-body" class="px-6 overflow-y-auto flex-1">
+      <div id="modal-body" class="p-6 overflow-y-auto flex-1 space-y-6">
         <!-- Test case details will be injected here -->
       </div>
     </div>
   </div>
 
   <script>
-    const testCasesByProvider = <%- JSON.stringify(providerTestCases) %>
-    const providerParamScores = <%- JSON.stringify(providerParamScores) %>
+    const providersData = <%- JSON.stringify(sortedProviders) %>;
+    const testCasesByProvider = <%- JSON.stringify(providerTestCases) %>;
+    const providerParamScores = <%- JSON.stringify(providerParamScores) %>;
 
-    let tooltipEl;
+    let tooltipEl
     document.addEventListener('DOMContentLoaded', () => {
-      tooltipEl = document.createElement('div');
-      tooltipEl.id = 'param-tooltip';
-      tooltipEl.className = 'hidden absolute z-50 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm dark:bg-gray-700 pointer-events-none';
-      document.body.appendChild(tooltipEl);
-      hljs.highlightAll();
-    });
+      tooltipEl = document.createElement('div')
+      tooltipEl.id = 'param-tooltip'
+      tooltipEl.className = 'hidden absolute z-50 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm dark:bg-gray-700 pointer-events-none'
+      document.body.appendChild(tooltipEl)
+    })
 
     function escapeHtml(unsafe) {
-      if (!unsafe) return ''
+      if (typeof unsafe !== 'string') return ''
       return unsafe
-        .replace(/&/g, "&")
-        .replace(/</g, "<")
-        .replace(/>/g, ">")
-        .replace(/"/g, '"')
-        .replace(/'/g, "'")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
     }
 
     function formatFunctionCall(call) {
@@ -324,15 +325,52 @@
     }
 
     function showDetails(providerId) {
+      const provider = providersData.find(p => p.provider === providerId);
       const cases = testCasesByProvider[providerId] || []
       const paramScores = providerParamScores[providerId] || {}
+
       const modal = document.getElementById('details-modal')
       const modalTitle = document.getElementById('modal-title')
       const modalBody = document.getElementById('modal-body')
 
-      modalTitle.textContent = providerId.replace('ollama:chat:', '')
+      if (!provider) {
+        modalTitle.textContent = 'Error';
+        modalBody.innerHTML = '<p class="text-red-500">Could not find data for this provider.</p>';
+        modal.classList.remove('hidden');
+        return;
+      }
+
+      modalTitle.textContent = provider.provider.replace('ollama:chat:', '')
       modalBody.innerHTML = ''
 
+      // Summary Section
+      const summarySection = document.createElement('div');
+      summarySection.className = 'grid grid-cols-2 md:grid-cols-4 gap-6 p-6 mb-2 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700';
+      summarySection.innerHTML = `
+        <div class="text-center">
+          <div class="text-2xl font-bold">${(provider.passRate || 0).toFixed(1)}%</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Pass Rate</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xl font-bold">
+            <span class="text-green-600 dark:text-green-400">${provider.metrics?.testPassCount || 0} Pass</span> /
+            <span class="text-red-600 dark:text-red-400">${provider.metrics?.testFailCount || 0} Fail</span> /
+            <span class="text-yellow-600 dark:text-yellow-400">${provider.metrics?.testErrorCount || 0} Error</span>
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1.5">Results</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold">${(provider.avgLatency / 1000).toFixed(3)}s</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Avg. Latency</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold">${(provider.overallParamScore || 0).toFixed(2)}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Parameter Score</div>
+        </div>
+      `;
+      modalBody.appendChild(summarySection)
+
+      // Parameter Scores Section
       const sortedParams = Object.keys(paramScores).sort((a, b) => paramScores[b] - paramScores[a])
 
       if (sortedParams.length > 0) {
@@ -367,16 +405,16 @@
               `
 
               paramEl.addEventListener('mouseenter', () => {
-                tooltipEl.textContent = paramName;
-                tooltipEl.classList.remove('hidden');
-              });
+                tooltipEl.textContent = paramName
+                tooltipEl.classList.remove('hidden')
+              })
               paramEl.addEventListener('mouseleave', () => {
-                tooltipEl.classList.add('hidden');
-              });
+                tooltipEl.classList.add('hidden')
+              })
               paramEl.addEventListener('mousemove', (e) => {
-                tooltipEl.style.left = `${e.pageX + 10}px`;
-                tooltipEl.style.top = `${e.pageY + 10}px`;
-              });
+                tooltipEl.style.left = `${e.pageX + 10}px`
+                tooltipEl.style.top = `${e.pageY + 10}px`
+              })
 
               gridEl.appendChild(paramEl)
           })
@@ -385,6 +423,7 @@
           modalBody.appendChild(paramsSection)
       }
 
+      // Detailed Test Cases
       if (cases.length === 0) {
         modalBody.innerHTML += '<div class="text-center py-12 text-gray-500">No detailed test cases found for this provider.</div>'
       } else {
@@ -407,48 +446,29 @@
         sortedScenarioKeys.forEach(scenarioId => {
           const scenarioTitle = unslugify(scenarioId)
           const scenarioCases = groupedCases[scenarioId]
-
-          const uniqueParams = new Set()
-          scenarioCases.forEach(c => {
-            const params = c.testCase?.metadata?.parameters
-            if (Array.isArray(params)) {
-              params.forEach(p => uniqueParams.add(p))
-            }
-          })
-          const paramsArray = Array.from(uniqueParams).sort()
-
           const scenarioWrapper = document.createElement('div')
+          scenarioWrapper.className = 'space-y-4'
 
           const scenarioTitleEl = document.createElement('h4')
-          scenarioTitleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4'
+          scenarioTitleEl.className = 'text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2'
           scenarioTitleEl.textContent = scenarioTitle
           scenarioWrapper.appendChild(scenarioTitleEl)
 
-          if (paramsArray.length > 0) {
-            const paramsContainer = document.createElement('div')
-            paramsContainer.className = 'flex items-center flex-wrap gap-x-3 gap-y-2 mb-4'
-            let paramsHTML = ''
-            paramsArray.forEach(p => {
-              paramsHTML += `<code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-mono">${escapeHtml(p)}</code>`
-            })
-            paramsContainer.innerHTML = paramsHTML
-            scenarioWrapper.appendChild(paramsContainer)
-          }
-
-          const cardsContainer = document.createElement('div')
-          cardsContainer.className = 'space-y-4'
-          scenarioWrapper.appendChild(cardsContainer)
-
           scenarioCases.forEach((c, index) => {
             const success = c.success
-            const cardClass = success
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30'
-              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30'
+            const hasError = !!c.error
+            let cardClass = ''
+            let statusBadge = ''
 
-            const statusBadge = success
-              ? '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-pass">✓ PASS</span>'
-              : '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-fail">✗ FAIL</span>'
+            if (success) {
+              cardClass = 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30'
+              statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-pass">✓ PASS</span>'
+            } else {
+              cardClass = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30'
+              statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-fail">✗ FAIL</span>'
+            }
 
+            const latencyHtml = c.latencyMs ? `<span class="font-mono text-sm text-gray-500 dark:text-gray-400 ml-2">${(c.latencyMs / 1000).toFixed(2)}s</span>` : ''
             const expectedCalls = c.testCase.vars.expected?.calls || []
             let expectedHtml = '<em class="text-gray-500">No function call expected.</em>'
             if (expectedCalls.length > 0) {
@@ -465,10 +485,11 @@
               <div class="flex items-start gap-4">
                 <div class="flex-grow space-y-4">
                   <div>
-                    <div class="my-2">
+                    <div class="my-2 flex items-center">
                       ${statusBadge}
-                      ${context && `<p class="text-md text-gray-600 dark:text-gray-400 mb-3">${escapeHtml(context)}</p>`}
+                      ${latencyHtml}
                     </div>
+                    ${context ? `<p class="text-md text-gray-600 dark:text-gray-400 mb-3">${escapeHtml(context)}</p>` : ''}
                     <div class="bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                       <h5 class="font-medium text-gray-700 dark:text-gray-300">Prompt</h5>
                       <div class="overflow-x-auto">
@@ -492,15 +513,15 @@
                     </div>
                   </div>
 
-                  ${!success ? `
+                  ${!success || hasError ? `
                   <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg p-4">
-                    <h5 class="font-medium text-red-800 dark:text-red-400 mb-2">Failure Reason</h5>
-                    <p class="text-sm text-red-700 dark:text-red-300">${escapeHtml(c.gradingResult?.reason || c.error || 'No reason provided.')}</p>
+                    <h5 class="font-medium text-red-800 dark:text-red-400 mb-2">${hasError ? 'Error Message' : 'Failure Reason'}</h5>
+                    <p class="text-sm text-red-700 dark:text-red-300">${escapeHtml(c.error || c.gradingResult?.reason || 'No reason provided.')}</p>
                   </div>` : ''}
                 </div>
               </div>
             `
-            cardsContainer.appendChild(card)
+            scenarioWrapper.appendChild(card)
           })
           modalBody.appendChild(scenarioWrapper)
         })
@@ -508,7 +529,10 @@
 
       modal.classList.remove('hidden')
       document.body.style.overflow = 'hidden'
-      setTimeout(() => hljs.highlightAll(), 100)
+      setTimeout(() => {
+        modalBody.scrollTop = 0
+        hljs.highlightAll()
+      }, 50)
     }
 
     function hideDetails() {
@@ -528,6 +552,33 @@
     window.showDetails = showDetails
     window.hideDetails = hideDetails
 
+    const applyTheme = () => {
+        const light = document.querySelector('link[href*="github.min.css"]')
+        const dark = document.querySelector('link[href*="github-dark.min.css"]')
+        if (document.documentElement.classList.contains('dark')) {
+            light.disabled = true
+            dark.disabled = false
+        } else {
+            light.disabled = false
+            dark.disabled = true
+        }
+    }
+
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                applyTheme()
+                break
+            }
+        }
+    })
+
+    observer.observe(document.documentElement, { attributes: true })
+
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme()
+      hljs.highlightAll()
+    })
   </script>
 </body>
 </html>
