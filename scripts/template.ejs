@@ -167,7 +167,6 @@
             <tr>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
-              <!-- <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th> -->
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pass Rate</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency</th>
@@ -178,14 +177,10 @@
             <% sortedProviders.forEach((p, index) => { %>
               <%
                 const rank = index + 1
-                const score = p.metrics?.score || 0
                 let rankClass = 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                 if (rank === 1) rankClass = 'rank-1'
                 else if (rank === 2) rankClass = 'rank-2'
                 else if (rank === 3) rankClass = 'rank-3'
-                
-                const maxPossibleScore = sortedProviders[0]?.metrics?.score > 0 ? sortedProviders[0].metrics.score * 1.05 : 20
-                const scorePercentage = Math.min(score / maxPossibleScore * 100, 100)
               %>
               <tr class="table-row transition-colors">
                 <td class="px-6 py-4 text-center">
@@ -196,14 +191,6 @@
                 <td class="px-6 py-4 text-center">
                   <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider.replace('ollama:chat:', '') %></div>
                 </td>
-                <!-- <td class="px-6 py-4"> -->
-                  <!-- <div class="space-y-2"> -->
-                    <!-- <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden"> -->
-                      <!-- <div class="score-bar h-full rounded-full transition-all duration-1000" style="width: <%= scorePercentage %>%"></div> -->
-                    <!-- </div> -->
-                    <!-- <div class="text-sm font-semibold text-gray-900 dark:text-white"><%= formatNum(score, 1) %></div> -->
-                  <!-- </div> -->
-                <!-- </td> -->
                 <td class="px-6 py-4 text-center">
                   <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= formatNum(p.passRate, 1) %>%</div>
                 </td>
@@ -250,6 +237,7 @@
 
   <script>
     const testCasesByProvider = <%- JSON.stringify(providerTestCases) %>
+    const providerParamScores = <%- JSON.stringify(providerParamScores) %>
 
     function escapeHtml(unsafe) {
       if (!unsafe) return ''
@@ -264,7 +252,7 @@
     function formatFunctionCall(call) {
       if (!call) return '<em class="text-gray-500">None</em>'
       return `<div class="space-y-3">
-        <div><strong class="text-gray-700 dark:text-gray-300">Function:</strong> <code class="bg-gray-100 dark:bg-black px-2 py-1 rounded text-sm font-mono">${escapeHtml(call.function)}</code></div>
+        <div><strong class="text-gray-700 dark:text-gray-300">Function:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">${escapeHtml(call.function)}</code></div>
         <div><strong class="text-gray-700 dark:text-gray-300">Parameters:</strong></div>
         <pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-json text-xs">${escapeHtml(JSON.stringify(call.parameters, null, 2))}</code></pre>
       </div>`
@@ -272,7 +260,7 @@
 
     function extractOutput(responseText) {
       if (!responseText) return '<em class="text-gray-500">No output or invalid format.</em>'
-      
+
       let match = responseText.match(/\`\`\`function_call\n([\s\S]*?)\n\`\`\`/)
       if (match && match[1]) {
         try {
@@ -282,62 +270,132 @@
               <pre class="bg-gray-50 dark:bg-black rounded-lg mt-2"><code class="language-text text-xs">${escapeHtml(match[1])}</code></pre>`
         }
       }
-      
+
       return `<pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-markdown text-xs">${escapeHtml(responseText)}</code></pre>`
     }
 
     function unslugify(slug) {
-      if (!slug) return 'General';
+      if (!slug) return 'General'
       return slug
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .join(' ')
     }
     
+    function getScoreColor(score) {
+      if (score >= 0.8) return '#10b981'
+      if (score > 0) return '#f59e0b'
+      return '#ef4444'
+    }
+
     function showDetails(providerId) {
       const cases = testCasesByProvider[providerId] || []
+      const paramScores = providerParamScores[providerId] || {}
       const modal = document.getElementById('details-modal')
       const modalTitle = document.getElementById('modal-title')
       const modalBody = document.getElementById('modal-body')
-      
+
       modalTitle.textContent = providerId.replace('ollama:chat:', '')
       modalBody.innerHTML = ''
 
-      if (cases.length === 0) {
-        modalBody.innerHTML = '<div class="text-center py-12 text-gray-500">No detailed test cases found for this provider.</div>'
-      } else {
-        const groupedCases = cases.reduce((acc, c) => {
-          const conversationId = c.testCase?.metadata?.conversationId || 'general';
-          if (!acc[conversationId]) {
-            acc[conversationId] = [];
-          }
-          acc[conversationId].push(c);
-          return acc;
-        }, {});
+      const sortedParams = Object.keys(paramScores).sort()
+      if (sortedParams.length > 0) {
+          const paramsSection = document.createElement('div')
+          paramsSection.className = 'mb-8'
 
-        const sortedScenarioKeys = Object.keys(groupedCases).sort();
+          const titleEl = document.createElement('h3')
+          titleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4'
+          titleEl.textContent = 'Scoring on Individual Parameters'
+          paramsSection.appendChild(titleEl)
+
+          const gridEl = document.createElement('div')
+          gridEl.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4'
+
+          sortedParams.forEach(paramName => {
+              const score = paramScores[paramName]
+
+              let trackClasses = 'flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5'
+              if (score === 0) {
+                trackClasses += ' border-2 border-red-500/60 dark:border-red-400/60'
+              }
+
+              const paramEl = document.createElement('div')
+              paramEl.className = 'flex items-center gap-3'
+
+              paramEl.innerHTML = `
+                  <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono w-32 truncate text-right">${escapeHtml(paramName)}</code>
+                  <div class="${trackClasses}">
+                      <div class="h-2.5 rounded-full" style="width: ${score * 100}%; background-color: ${getScoreColor(score)}"></div>
+                  </div>
+                  <span class="text-sm font-semibold w-10 text-left">${score.toFixed(2)}</span>
+              `
+              gridEl.appendChild(paramEl)
+          })
+
+          paramsSection.appendChild(gridEl)
+          modalBody.appendChild(paramsSection)
+      }
+
+      if (cases.length === 0) {
+        modalBody.innerHTML += '<div class="text-center py-12 text-gray-500">No detailed test cases found for this provider.</div>'
+      } else {
+        const titleEl = document.createElement('h3')
+        titleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4'
+        titleEl.textContent = 'Detailed Evaluation of Scenarios'
+        modalBody.appendChild(titleEl)
+
+        const groupedCases = cases.reduce((acc, c) => {
+          const conversationId = c.testCase?.metadata?.conversationId || 'general'
+          if (!acc[conversationId]) {
+            acc[conversationId] = []
+          }
+          acc[conversationId].push(c)
+          return acc
+        }, {})
+
+        const sortedScenarioKeys = Object.keys(groupedCases).sort()
 
         sortedScenarioKeys.forEach(scenarioId => {
-          const scenarioTitle = unslugify(scenarioId);
-          const scenarioCases = groupedCases[scenarioId];
+          const scenarioTitle = unslugify(scenarioId)
+          const scenarioCases = groupedCases[scenarioId]
 
-          const scenarioWrapper = document.createElement('div');
-          
-          const scenarioTitleEl = document.createElement('h3');
-          scenarioTitleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4';
-          scenarioTitleEl.textContent = scenarioTitle;
-          scenarioWrapper.appendChild(scenarioTitleEl);
+          const uniqueParams = new Set()
+          scenarioCases.forEach(c => {
+            const params = c.testCase?.metadata?.parameters
+            if (Array.isArray(params)) {
+              params.forEach(p => uniqueParams.add(p))
+            }
+          })
+          const paramsArray = Array.from(uniqueParams).sort()
 
-          const cardsContainer = document.createElement('div');
-          cardsContainer.className = 'space-y-4';
-          scenarioWrapper.appendChild(cardsContainer);
-          
+          const scenarioWrapper = document.createElement('div')
+
+          const scenarioTitleEl = document.createElement('h4')
+          scenarioTitleEl.className = 'text-xl font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4'
+          scenarioTitleEl.textContent = scenarioTitle
+          scenarioWrapper.appendChild(scenarioTitleEl)
+
+          if (paramsArray.length > 0) {
+            const paramsContainer = document.createElement('div')
+            paramsContainer.className = 'flex items-center flex-wrap gap-x-3 gap-y-2 mb-4'
+            let paramsHTML = ''
+            paramsArray.forEach(p => {
+              paramsHTML += `<code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-mono">${escapeHtml(p)}</code>`
+            })
+            paramsContainer.innerHTML = paramsHTML
+            scenarioWrapper.appendChild(paramsContainer)
+          }
+
+          const cardsContainer = document.createElement('div')
+          cardsContainer.className = 'space-y-4'
+          scenarioWrapper.appendChild(cardsContainer)
+
           scenarioCases.forEach((c, index) => {
             const success = c.success
             const cardClass = success 
               ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30' 
               : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30'
-            
+
             const statusBadge = success
               ? '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-pass">✓ PASS</span>'
               : '<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium status-fail">✗ FAIL</span>'
@@ -350,6 +408,7 @@
 
             const actualHtml = extractOutput(c.response?.output)
             const formattedMessage = escapeHtml(c.testCase.vars.message)
+            const context = c.testCase?.metadata?.context
 
             const card = document.createElement('div')
             card.className = `rounded-xl border ${cardClass} p-6`
@@ -357,7 +416,10 @@
               <div class="flex items-start gap-4">
                 <div class="flex-grow space-y-4">
                   <div>
-                    <div class="my-2">${statusBadge}</div>
+                    <div class="my-2">
+                      ${statusBadge}
+                      ${context && `<p class="text-md text-gray-600 dark:text-gray-400 mb-3">${escapeHtml(context)}</p>`}
+                    </div>
                     <div class="bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                       <h5 class="font-medium text-gray-700 dark:text-gray-300">Prompt</h5>
                       <div class="overflow-x-auto">
@@ -365,7 +427,7 @@
                       </div>
                     </div>
                   </div>
-                  
+
                   <div class="grid lg:grid-cols-2 gap-4">
                     <div class="flex flex-col space-y-2">
                       <h5 class="font-medium text-gray-700 dark:text-gray-300">Expected Output</h5>
@@ -380,7 +442,7 @@
                       </div>
                     </div>
                   </div>
-                  
+
                   ${!success ? `
                   <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg p-4">
                     <h5 class="font-medium text-red-800 dark:text-red-400 mb-2">Failure Reason</h5>
@@ -390,9 +452,9 @@
               </div>
             `
             cardsContainer.appendChild(card)
-          });
-          modalBody.appendChild(scenarioWrapper);
-        });
+          })
+          modalBody.appendChild(scenarioWrapper)
+        })
       }
 
       modal.classList.remove('hidden')
