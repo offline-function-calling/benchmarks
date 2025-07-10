@@ -22,93 +22,93 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    
+
     .score-bar {
       background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
       height: 4px;
       border-radius: 2px;
     }
-    
+
     .rank-1 {
       background: #fbbf24;
       color: #92400e;
     }
-    
+
     .rank-2 {
       background: #9ca3af;
       color: #374151;
     }
-    
+
     .rank-3 {
       background: #fb923c;
       color: #9a3412;
     }
-    
+
     .table-row:hover {
       background-color: #f8fafc;
     }
-    
+
     @media (prefers-color-scheme: dark) {
       .table-row:hover {
         background-color: rgba(255, 255, 255, 0.05);
       }
     }
-    
+
     .modal-backdrop {
       background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
     }
-    
+
     .status-pass {
       background: #dcfce7;
       color: #166534;
       border: 1px solid #bbf7d0;
     }
-    
+
     .status-fail {
       background: #fef2f2;
       color: #dc2626;
       border: 1px solid #fecaca;
     }
-    
+
     @media (prefers-color-scheme: dark) {
       .status-pass {
         background: rgba(16, 185, 129, 0.1);
         color: #10b981;
         border: 1px solid rgba(16, 185, 129, 0.2);
       }
-      
+
       .status-fail {
         background: rgba(239, 68, 68, 0.1);
         color: #ef4444;
         border: 1px solid rgba(239, 68, 68, 0.2);
       }
     }
-    
+
     .animate-fade-in {
       animation: fadeIn 0.6s ease-out;
     }
-    
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
+
     @media (prefers-color-scheme: dark) {
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
       }
-      
+
       ::-webkit-scrollbar-track {
         background: #000;
       }
-      
+
       ::-webkit-scrollbar-thumb {
         background: #333;
         border-radius: 3px;
       }
-      
+
       ::-webkit-scrollbar-thumb:hover {
         background: #555;
       }
@@ -116,8 +116,9 @@
   </style>
 </head>
 <body class="bg-white dark:bg-black text-gray-900 dark:text-white min-h-screen">
-  <!-- Header -->
+  <!-- Main Container -->
   <div class="max-w-6xl mx-auto px-6 py-16">
+    <!-- Header -->
     <div class="text-center mb-16">
       <div class="flex items-center justify-center gap-4 mb-6">
         <h1 class="text-5xl md:text-6xl font-black text-gray-900 dark:text-white">
@@ -146,15 +147,15 @@
         <div class="text-sm text-gray-500 dark:text-gray-400">Models</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= formatNum(stats.avgScore, 1) %></div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">Average Score</div>
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.uniqueParametersCount %></div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Unique Capabilities</div>
       </div>
       <div class="text-center">
         <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><%= stats.totalTests %></div>
         <div class="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><span><%= formatNum(stats.avgLatency, 0) %></span>ms</div>
+        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1"><span><%= formatNum(stats.avgLatency, 0) %></span> ms</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">Average Latency<sup>*</sup></div>
       </div>
     </div>
@@ -168,12 +169,20 @@
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
               <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pass Rate</th>
+              <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capability Score</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Results</th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Latency<sup>*</sup></th>
               <th class="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <%
+              const getScoreColor = (score) => {
+                if (score >= 0.8) return '#10b981';
+                if (score > 0) return '#f59e0b';
+                return '#ef4444';
+              }
+            %>
             <% sortedProviders.forEach((p, index) => { %>
               <%
                 const rank = index + 1
@@ -181,6 +190,7 @@
                 if (rank === 1) rankClass = 'rank-1'
                 else if (rank === 2) rankClass = 'rank-2'
                 else if (rank === 3) rankClass = 'rank-3'
+                const avgParamScore = p.avgParamScore || 0;
               %>
               <tr class="table-row transition-colors">
                 <td class="px-6 py-4 text-center">
@@ -194,6 +204,16 @@
                 <td class="px-6 py-4 text-center">
                   <div class="text-lg font-semibold text-gray-900 dark:text-white"><%= formatNum(p.passRate, 1) %>%</div>
                 </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center gap-2">
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                      <div class="h-2.5 rounded-full"
+                           style="width: <%= avgParamScore * 100 %>%; background-color: <%= getScoreColor(avgParamScore) %>;">
+                      </div>
+                    </div>
+                    <span class="text-sm font-semibold w-10 text-right"><%= formatNum(avgParamScore, 2) %></span>
+                  </div>
+                </td>
                 <td class="px-6 py-4 text-center">
                   <div class="flex items-center justify-center gap-4 text-sm">
                     <span class="text-green-600 dark:text-green-400 font-medium"><%= p.metrics?.testPassCount || 0 %></span>
@@ -202,12 +222,12 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 text-center">
-                  <div class="font-mono text-sm text-gray-900 dark:text-gray-300"><%= formatNum(p.avgLatency, 0) %>ms</div>
+                  <div class="font-mono text-sm text-gray-900 dark:text-gray-300"><%= formatNum(p.avgLatency, 0) %> ms</div>
                 </td>
                 <td class="px-6 py-4 text-center">
-                  <button onclick="showDetails('<%= p.provider %>')" 
-                      class="underline text-gray-900 dark:text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
-                    View
+                  <button onclick="showDetails('<%= p.provider %>')"
+                      class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium py-1.5 px-4 rounded-lg transition-colors text-sm">
+                    View Details
                   </button>
                 </td>
               </tr>
@@ -227,7 +247,7 @@
   <!-- Modal -->
   <div id="details-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-white dark:bg-black rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
-      <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+      <header class="px-6 py-4 flex justify-between items-center flex-shrink-0">
         <h2 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h2>
         <button onclick="hideDetails()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,7 +255,7 @@
           </svg>
         </button>
       </header>
-      <div id="modal-body" class="p-6 overflow-y-auto flex-1 space-y-6">
+      <div id="modal-body" class="px-6 overflow-y-auto flex-1">
         <!-- Test case details will be injected here -->
       </div>
     </div>
@@ -244,6 +264,15 @@
   <script>
     const testCasesByProvider = <%- JSON.stringify(providerTestCases) %>
     const providerParamScores = <%- JSON.stringify(providerParamScores) %>
+
+    let tooltipEl;
+    document.addEventListener('DOMContentLoaded', () => {
+      tooltipEl = document.createElement('div');
+      tooltipEl.id = 'param-tooltip';
+      tooltipEl.className = 'hidden absolute z-50 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm dark:bg-gray-700 pointer-events-none';
+      document.body.appendChild(tooltipEl);
+      hljs.highlightAll();
+    });
 
     function escapeHtml(unsafe) {
       if (!unsafe) return ''
@@ -287,7 +316,7 @@
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ')
     }
-    
+
     function getScoreColor(score) {
       if (score >= 0.8) return '#10b981'
       if (score > 0) return '#f59e0b'
@@ -304,7 +333,8 @@
       modalTitle.textContent = providerId.replace('ollama:chat:', '')
       modalBody.innerHTML = ''
 
-      const sortedParams = Object.keys(paramScores).sort()
+      const sortedParams = Object.keys(paramScores).sort((a, b) => paramScores[b] - paramScores[a])
+
       if (sortedParams.length > 0) {
           const paramsSection = document.createElement('div')
           paramsSection.className = 'mb-8'
@@ -335,6 +365,19 @@
                   </div>
                   <span class="text-sm font-semibold w-10 text-left">${score.toFixed(2)}</span>
               `
+
+              paramEl.addEventListener('mouseenter', () => {
+                tooltipEl.textContent = paramName;
+                tooltipEl.classList.remove('hidden');
+              });
+              paramEl.addEventListener('mouseleave', () => {
+                tooltipEl.classList.add('hidden');
+              });
+              paramEl.addEventListener('mousemove', (e) => {
+                tooltipEl.style.left = `${e.pageX + 10}px`;
+                tooltipEl.style.top = `${e.pageY + 10}px`;
+              });
+
               gridEl.appendChild(paramEl)
           })
 
@@ -398,8 +441,8 @@
 
           scenarioCases.forEach((c, index) => {
             const success = c.success
-            const cardClass = success 
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30' 
+            const cardClass = success
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500/30'
               : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500/30'
 
             const statusBadge = success
@@ -485,9 +528,6 @@
     window.showDetails = showDetails
     window.hideDetails = hideDetails
 
-    document.addEventListener('DOMContentLoaded', () => {
-      hljs.highlightAll()
-    })
   </script>
 </body>
 </html>

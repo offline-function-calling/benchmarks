@@ -126,7 +126,7 @@ export const matchFunctionCalls = (output, context) => {
 
   const usedExpectedIndices = new Set()
   const usedActualIndices = new Set()
-  
+
   for (let i = 0; i < calls.length; i++) {
     for (let j = 0; j < expected.length; j++) {
       if (usedActualIndices.has(i) || usedExpectedIndices.has(j)) continue
@@ -148,14 +148,14 @@ export const matchFunctionCalls = (output, context) => {
   } else {
     const reasonParts = []
     reasonParts.push(`${matchedCount} of ${expected.length} expected calls matched (found ${calls.length} total calls).`)
-    
+
     const parameterMismatches = []
-    
+
     let remainingUnmet = expected.filter((_, j) => !usedExpectedIndices.has(j))
     let remainingUnmatched = calls.filter((_, i) => !usedActualIndices.has(i))
 
     const newRemainingUnmet = []
-    
+
     remainingUnmet.forEach(unmet => {
       const matchIndex = remainingUnmatched.findIndex(unmatched => unmet.function === unmatched.function)
       if (matchIndex !== -1) {
@@ -170,7 +170,7 @@ export const matchFunctionCalls = (output, context) => {
         newRemainingUnmet.push(unmet)
       }
     })
-    
+
     remainingUnmet = newRemainingUnmet
 
     if (parameterMismatches.length > 0) {

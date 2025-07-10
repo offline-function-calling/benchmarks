@@ -17,36 +17,39 @@ async function generateReport() {
         const { evalId, results } = data
         const { timestamp, prompts, results: testCases } = results
 
-        const sortedProviders = prompts
-            .map(p => {
-                const metrics = p.metrics || {}
-                const totalTests = (metrics.testPassCount || 0) + (metrics.testFailCount || 0)
-                const passRate = totalTests > 0 ? (metrics.testPassCount / totalTests) * 100 : 0
-                const totalRequests = metrics.tokenUsage?.numRequests || 1
-                const avgLatency = (metrics.totalLatencyMs || 0) / totalRequests
-                
-                return {
-                    ...p,
-                    passRate,
-                    avgLatency,
-                }
-            })
-            .sort((a, b) => (b.passRate) - (a.passRate))
+        let providers = prompts.map(p => {
+            const metrics = p.metrics || {}
+            const totalTests = (metrics.testPassCount || 0) + (metrics.testFailCount || 0)
+            const passRate = totalTests > 0 ? (metrics.testPassCount / totalTests) * 100 : 0
+            const totalRequests = metrics.tokenUsage?.numRequests || 1
+            const avgLatency = (metrics.totalLatencyMs || 0) / totalRequests
 
-        const providerCount = sortedProviders.length
+            return {
+                ...p,
+                passRate,
+                avgLatency,
+            }
+        });
 
-        const totalScore = sortedProviders.reduce((sum, p) => sum + (p.metrics?.score || 0), 0)
-        const avgScore = providerCount > 0 ? totalScore / providerCount : 0
+        const providerCount = providers.length
 
-        const totalTests = sortedProviders.reduce((sum, p) =>
+        const totalTests = providers.reduce((sum, p) =>
             sum + (p.metrics?.testPassCount || 0) + (p.metrics?.testFailCount || 0) + (p.metrics?.testErrorCount || 0), 0)
 
-        const totalLatency = sortedProviders.reduce((sum, p) => sum + p.avgLatency, 0)
+        const totalLatency = providers.reduce((sum, p) => sum + p.avgLatency, 0)
         const avgLatency = providerCount > 0 ? totalLatency / providerCount : 0
+
+        const uniqueParameters = new Set();
+        for (const caseResult of testCases) {
+            const metadataParams = caseResult.testCase?.metadata?.parameters;
+            if (Array.isArray(metadataParams)) {
+                metadataParams.forEach(param => uniqueParameters.add(param));
+            }
+        }
 
         const stats = {
             providerCount,
-            avgScore,
+            uniqueParametersCount: uniqueParameters.size,
             totalTests,
             avgLatency
         }
@@ -63,6 +66,15 @@ async function generateReport() {
             providerTestCases[providerId].push(caseResult)
         }
         console.log("Processed and aggregated test data")
+
+        console.log("Sorting detailed test cases by score for each provider...")
+        for (const providerId in providerTestCases) {
+            providerTestCases[providerId].sort((a, b) => {
+                return (b.score || 0) - (a.score || 0)
+            })
+        }
+        console.log("Detailed test cases sorted.")
+
 
         console.log("Calculating metadata parameter scores...")
         const providerParamScores = {};
@@ -114,6 +126,25 @@ async function generateReport() {
         }
         console.log("Metadata parameter scores calculated and normalized.")
 
+        for (const provider of providers) {
+            const scores = providerParamScores[provider.provider] || {};
+            const scoreValues = Object.values(scores);
+            let avgParamScore = 0;
+            if (scoreValues.length > 0) {
+                const sumOfScores = scoreValues.reduce((sum, s) => sum + s, 0);
+                avgParamScore = sumOfScores / scoreValues.length;
+            }
+            provider.avgParamScore = avgParamScore;
+        }
+        console.log("Calculated average capability scores for each provider.");
+
+        const sortedProviders = providers.sort((a, b) => {
+            const scoreDiff = (b.avgParamScore || 0) - (a.avgParamScore || 0);
+            if (scoreDiff !== 0) return scoreDiff;
+            return (b.passRate || 0) - (a.passRate || 0);
+        });
+        console.log("Sorted providers by Capability Score.");
+
         const templatePath = path.join(__dirname, 'template.ejs')
         const templateData = {
             evalId,
@@ -130,7 +161,7 @@ async function generateReport() {
 
         const outputPath = path.join(__dirname, '../leaderboard.html')
         await fs.writeFile(outputPath, html)
-        
+
         console.log(`Success! Leaderboard saved as leaderboard.html.`)
 
     } catch (error) {
