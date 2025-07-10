@@ -192,6 +192,47 @@
                 if (score >= 0.5) return '#f59e0b'
                 return '#ef4444'
               }
+
+              const formatProviderName = (model) => {
+                const id = model.replace('ollama:chat:', '')
+                const regex = /^(gemma3n?):([e\d]+b)(-it)?(?:-(.*))?$/
+                const match = id.match(regex)
+
+                if (!match) {
+                  return `<span class="font-mono text-sm text-gray-500">${id}</span>`
+                }
+
+                const [, base, size, instruct, quant] = match
+                const baseNameHtml = `<span class="font-semibold text-gray-800 dark:text-gray-100">${base.replace('gemma3n', 'Gemma 3N').replace('gemma3', 'Gemma 3')}</span>`
+                const sizeHtml = `<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-500/20">${size.toUpperCase()}</span>`
+                const detailsHtml = []
+
+                if (instruct) {
+                  detailsHtml.push(
+                    `<span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/50 dark:text-blue-300 dark:ring-blue-700/30">Instr. Tuned</span>`
+                  )
+                }
+
+                if (quant) {
+                  let quantText
+                  if (quant === 'qat') quantText = 'QAT'
+                  else if (quant === 'fp16') quantText = 'FP16'
+                  else if (quant.startsWith('q')) quantText = `${quant.toUpperCase()}`
+                  else quantText = quant.toUpperCase()
+
+                  detailsHtml.push(
+                    `<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/50 dark:text-green-300 dark:ring-green-600/40">${quantText}</span>`
+                  )
+                }
+
+                return `
+                  <div class="flex items-center gap-x-2">
+                    ${baseNameHtml}
+                    ${sizeHtml}
+                    ${detailsHtml.join('\n      ')}
+                  </div>
+                `
+              }
             %>
             <% sortedProviders.forEach((p, index) => { %>
               <%
@@ -209,7 +250,7 @@
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <div class="font-mono font-semibold text-gray-900 dark:text-white"><%= p.provider.replace('ollama:chat:', '') %></div>
+                  <%- formatProviderName(p.provider) %>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-center gap-2">
@@ -239,7 +280,7 @@
 
     <footer class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 text-center">
       <div class="max-w-3xl mx-auto space-y-4 text-xs/5 text-gray-500 dark:text-gray-400">
-          <span><strong><sup>*</sup>Capability Score</strong>: A weighted, holistic score from 0 to 1 that balances multiple aspects of model performance. It is calculated as: (Pass Rate Score * 45%) + (Parameter Score * 45%) + (Latency Score * 10%). Each component is normalized before averaging. The Parameter Score is visible in the details modal, and the Latency Score is based on a model's speed relative to others in the test.</span>
+          <span><strong><sup>*</sup>Capability Score</strong>: A weighted score between 0 and 1 that factors in multiple aspects of a model's performance in the tests. It is calculated as follows: <span class="font-mono text-xs">(pass rate &times; 0.45) + (parameter score &times; 0.45) + (latency score &times; 0.10)</span>. Each component is normalized before averaging. The individual scores can be found in the details modal.</span>
           <p><strong><sup>^</sup>Latency</strong>: These tests were run using Ollama on an Apple Mac Mini with 24G of RAM and an M4 Pro chip.</p>
       </div>
     </footer>
@@ -249,7 +290,7 @@
   <div id="details-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-white dark:bg-black rounded-2xl shadow-xl w-full max-w-6xl max-h-full flex flex-col border border-gray-200 dark:border-gray-700">
       <header class="px-6 py-4 flex justify-between items-center flex-shrink-0">
-        <h2 id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></h2>
+        <span id="modal-title" class="text-2xl font-bold text-gray-900 dark:text-white"></span>
         <button onclick="hideDetails()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -324,6 +365,47 @@
       return '#ef4444'
     }
 
+    function formatProviderName(model) {
+      const id = model.replace('ollama:chat:', '')
+      const regex = /^(gemma3n?):([e\d]+b)(-it)?(?:-(.*))?$/
+      const match = id.match(regex)
+
+      if (!match) {
+        return `<h2 class="font-mono text-sm text-gray-500">${id}</h2>`
+      }
+
+      const [, base, size, instruct, quant] = match
+      const baseNameHtml = `<h2 class="font-semibold text-gray-800 dark:text-gray-100">${base.replace('gemma3n', 'Gemma 3N').replace('gemma3', 'Gemma 3')}</h2>`
+      const sizeHtml = `<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 mb-2 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-500/20">${size.toUpperCase()}</span>`
+      const detailsHtml = []
+
+      if (instruct) {
+        detailsHtml.push(
+          `<span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 mb-2 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/50 dark:text-blue-300 dark:ring-blue-700/30">Instr. Tuned</span>`
+        )
+      }
+
+      if (quant) {
+        let quantText
+        if (quant === 'qat') quantText = 'QAT'
+        else if (quant === 'fp16') quantText = 'FP16'
+        else if (quant.startsWith('q')) quantText = `${quant.toUpperCase()}`
+        else quantText = quant.toUpperCase()
+
+        detailsHtml.push(
+          `<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 mb-2 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/50 dark:text-green-300 dark:ring-green-600/40">${quantText}</span>`
+        )
+      }
+
+      return `
+        <div class="flex items-center gap-x-2">
+          ${baseNameHtml}
+          ${sizeHtml}
+          ${detailsHtml.join('\n      ')}
+        </div>
+      `
+    }
+
     function showDetails(providerId) {
       const provider = providersData.find(p => p.provider === providerId);
       const cases = testCasesByProvider[providerId] || []
@@ -340,7 +422,7 @@
         return;
       }
 
-      modalTitle.textContent = provider.provider.replace('ollama:chat:', '')
+      modalTitle.innerHTML = formatProviderName(provider.provider)
       modalBody.innerHTML = ''
 
       // Summary Section

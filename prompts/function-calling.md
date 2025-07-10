@@ -33,8 +33,6 @@ I will execute the function and the result of the function call will be returned
 }
 ```
 
-Please remember the following guidelines while responding.
-
 If you need information that I haven't provided in the conversation uptil now, *ask me for it*. You must never, ever, guess or make assumptions. This is a critical safeguard that prevents hallucinations.
 
 Before responding, briefly consider:
