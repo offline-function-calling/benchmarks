@@ -66,10 +66,6 @@ async function generateReport() {
         }
         console.log("Processed and aggregated test data")
 
-        for (const providerId in providerTestCases) {
-            providerTestCases[providerId].sort((a, b) => (b.score || 0) - (a.score || 0))
-        }
-
         console.log("Calculating metadata parameter scores...")
         const providerParamScores = {}
         for (const providerId in providerTestCases) {
