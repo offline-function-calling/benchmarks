@@ -23,6 +23,10 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: simple-parallel-calls
+    parameters:
+      - parallel-calling
+      - function-selection
+    context: "The user requests a complete profile, which requires fetching data from three separate systems. The model should identify that these calls can be made in parallel."
 - vars:
     functions: file://scenarios/simple-parallel-calls/functions.md
     message: file://scenarios/simple-parallel-calls/outputs/00-partial-results.md
@@ -38,6 +42,10 @@
       value: The response must indicate somehow that it the model is waiting for a function call to complete, with bonus points if it includes a partial summary based on the outputs received so far.
   metadata:
     conversationId: simple-parallel-calls
+    parameters:
+      - output-understanding
+      - context-application
+    context: "The model receives data from two out of three parallel calls, and must wait for the last call to return its output."
 - vars:
     functions: file://scenarios/simple-parallel-calls/functions.md
     message: file://scenarios/simple-parallel-calls/outputs/01-remaining-results.md
@@ -53,3 +61,6 @@
       value: The response must provide a comprehensive, user-friendly summary of the customer's profile using all the merged data.
   metadata:
     conversationId: simple-parallel-calls
+    parameters:
+      - output-understanding
+    context: "With the all three outputs available, the model's task is to present this comprehensive information to the user in a structured and easy-to-understand summary."

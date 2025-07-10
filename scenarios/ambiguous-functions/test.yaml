@@ -19,6 +19,12 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: ambiguous-functions
+    parameters:
+      - function-selection
+      - handling-ambiguity
+      - parameter-extraction
+      - parameter-transformation
+    context: "Faced with multiple product-related functions, the model must select the most appropriate one and infer parameters from ambiguous user input like 'under $100' and 'good reviews'."
 - vars:
     functions: file://scenarios/ambiguous-functions/functions.md
     message: file://scenarios/ambiguous-functions/outputs/00-headphone-results.md
@@ -34,3 +40,6 @@
       value: The response must present the found headphone options to the user in a helpful, readable format.
   metadata:
     conversationId: ambiguous-functions
+    parameters:
+      - output-understanding
+    context: "The model receives a list of matching products and should present these results to the user in a clear and helpful manner."

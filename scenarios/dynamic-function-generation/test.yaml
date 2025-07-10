@@ -15,6 +15,9 @@
       value: The generated code and function specification must match the user's requirements for a 'calculate_lead_score' function and the JSON schema for function specifications.
   metadata:
     conversationId: dynamic-function-generation
+    parameters:
+      - function-generation
+    context: "The model is asked to create a function specification from a set of natural language requirements for scoring leads."
 - vars:
     functions: file://scenarios/dynamic-function-generation/functions.md
     message: file://scenarios/dynamic-function-generation/questions/01-score-leads.md
@@ -41,6 +44,11 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: dynamic-function-generation
+    parameters:
+      - function-discovery
+      - parallel-calling
+      - parameter-transformation
+    context: "The model must now discover the function it just generated and use it to score two separate leads in parallel as requested."
 - vars:
     functions: file://scenarios/dynamic-function-generation/functions.md
     message: file://scenarios/dynamic-function-generation/outputs/00-scored-leads.md
@@ -56,3 +64,6 @@
       value: The response must present the calculated scores for both leads clearly to the user.
   metadata:
     conversationId: dynamic-function-generation
+    parameters:
+      - output-understanding
+    context: "Receiving the scores for both leads, the model must present the final results clearly and effectively to the user."

@@ -17,6 +17,10 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: cascading-error-recovery
+    parameters:
+      - function-selection
+      - composite-calling
+    context: "The model starts a user search by first attempting the fastest data source: the cache."
 - vars:
     functions: file://scenarios/cascading-error-recovery/functions.md
     message: file://scenarios/cascading-error-recovery/outputs/00-cache-error.md
@@ -39,6 +43,10 @@
       value: The model must explain that the cache lookup failed. It must then fallback to performing a database lookup using another function.
   metadata:
     conversationId: cascading-error-recovery
+    parameters:
+      - error-handling
+      - function-selection
+    context: "The cache lookup fails. The model must handle this error by falling back to the next data source: the main database."
 - vars:
     functions: file://scenarios/cascading-error-recovery/functions.md
     message: file://scenarios/cascading-error-recovery/outputs/01-db-error.md
@@ -56,6 +64,11 @@
       value: The model must explain that the database lookup also failed. It must then ask the user for their username to try the final available tool (`get_user_from_ldap`).
   metadata:
     conversationId: cascading-error-recovery
+    parameters:
+      - error-handling
+      - missing-parameters
+      - function-selection
+    context: "The database lookup also fails. The model must handle a second error, realize the next tool requires different information, and ask the user for it."
 - vars:
     functions: file://scenarios/cascading-error-recovery/functions.md
     message: file://scenarios/cascading-error-recovery/questions/01-provide-username.md
@@ -75,3 +88,7 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: cascading-error-recovery
+    parameters:
+      - context-application
+      - function-calling
+    context: "The user provides the requested username, and the model must use this new information to attempt the final lookup in the LDAP directory."

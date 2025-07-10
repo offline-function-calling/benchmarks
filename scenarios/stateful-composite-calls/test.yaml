@@ -17,6 +17,10 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: stateful-composite-calls
+    parameters:
+      - composite-calling
+      - context-application
+    context: "To advance a document in a workflow, the model must first plan to check its current status before deciding on the next action."
 - vars:
     functions: file://scenarios/stateful-composite-calls/functions.md
     message: file://scenarios/stateful-composite-calls/outputs/00-document-status.md
@@ -38,6 +42,11 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: stateful-composite-calls
+    parameters:
+      - composite-calling
+      - output-understanding
+      - context-application
+    context: "After learning the document is 'in_review,' the model must use this output to call the correct subsequent function, utilizing context from the initial prompt."
 - vars:
     functions: file://scenarios/stateful-composite-calls/functions.md
     message: file://scenarios/stateful-composite-calls/outputs/01-document-approved.md
@@ -53,3 +62,6 @@
       value: The response must confirm to the user that the document has been approved successfully.
   metadata:
     conversationId: stateful-composite-calls
+    parameters:
+      - output-understanding
+    context: "Upon receiving confirmation that the document has been approved, the model should deliver the final success message to the user."

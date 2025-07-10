@@ -19,6 +19,10 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: parameter-transformation
+    parameters:
+      - parameter-transformation
+      - function-calling
+    context: "The model must convert natural language descriptions of time ('every day at 2 AM') and duration ('2 weeks') into specific formats (CRON string and an integer)."
 - vars:
     functions: file://scenarios/parameter-transformation/functions.md
     message: file://scenarios/parameter-transformation/outputs/00-backup-scheduled.md
@@ -34,3 +38,6 @@
       value: The response must confirm that the backup job has been scheduled successfully, referencing the job ID from the function output.
   metadata:
     conversationId: parameter-transformation
+    parameters:
+      - output-understanding
+    context: "Given the successful scheduling confirmation, the model must relay this information, including the next run time, back to the user."

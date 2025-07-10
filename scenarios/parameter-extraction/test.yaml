@@ -20,6 +20,10 @@
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: parameter-extraction
+    parameters:
+      - parameter-transformation
+      - function-calling
+    context: "The model must transform a memory value with units ('512MB') into a simple integer to match the function's required argument type."
 - vars:
     functions: file://scenarios/parameter-extraction/functions.md
     message: file://scenarios/parameter-extraction/outputs/00-deployment-created.md
@@ -35,4 +39,6 @@
       value: The response must confirm that the deployment has started, referencing the deployment ID from the function output.
   metadata:
     conversationId: parameter-extraction
-
+    parameters:
+      - output-understanding
+    context: "After receiving confirmation that the deployment was created, the model should inform the user of the successful action."
