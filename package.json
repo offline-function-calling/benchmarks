@@ -7,11 +7,12 @@
   "author": "Vedant Kulkarni <gamemaker0042@gmail.com>",
   "type": "module",
   "scripts": {
-    "benchmark": "promptfoo eval --grader google:gemini-2.5-flash --config evaluator.yaml --output report.json",
+    "benchmark": "node scripts/benchmark.js",
     "report": "promptfoo view"
   },
   "dependencies": {
     "ejs": "3.1.10",
+    "execa": "9.6.0",
     "promptfoo": "0.116.6"
   }
 }

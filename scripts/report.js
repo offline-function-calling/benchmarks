@@ -3,19 +3,50 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import ejs from 'ejs'
 
-import data from '../report.json' with { type: 'json' }
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const REPORTS_DIR = path.join(__dirname, '../reports')
 
 async function generateReport() {
     console.log("Starting leaderboard generation...")
 
     try {
-        console.log("Successfully imported report.json")
+        console.log(`Reading and combining reports from: ${REPORTS_DIR}`)
 
-        const { evalId, results } = data
-        const { timestamp, prompts, results: testCases } = results
+        const reportFiles = await fs.readdir(REPORTS_DIR)
+        const jsonFiles = reportFiles.filter(file => path.extname(file).toLowerCase() === '.json')
+
+        if (jsonFiles.length === 0) {
+            throw new Error(`No JSON report files found in the directory: ${REPORTS_DIR}`)
+        }
+
+        let allPrompts = []
+        let allTestCases = []
+
+        for (const file of jsonFiles) {
+            const filePath = path.join(REPORTS_DIR, file)
+            try {
+                const fileContent = await fs.readFile(filePath, 'utf-8')
+                const reportData = JSON.parse(fileContent)
+
+                if (reportData.results && reportData.results.prompts && reportData.results.results) {
+                    allPrompts.push(...reportData.results.prompts)
+                    allTestCases.push(...reportData.results.results)
+                    console.log(`Successfully processed and added ${file}`)
+                } else {
+                    console.warn(`Skipping ${file}: does not contain the expected results structure.`)
+                }
+            } catch (parseError) {
+                console.error(`Error parsing ${file}: ${parseError.message}. Skipping this file.`)
+            }
+        }
+
+        console.log(`Successfully combined data from ${jsonFiles.length} report files.`)
+
+        const evalId = `eval-combined-${Date.now().toString(36)}`
+        const timestamp = new Date().toISOString()
+        const prompts = allPrompts
+        const testCases = allTestCases
 
         let providers = prompts.map(p => {
             const metrics = p.metrics || {}
@@ -170,7 +201,7 @@ async function generateReport() {
 
     } catch (error) {
         if (error.code === 'ENOENT') {
-            console.error("Error: 'template.ejs' or 'report.json' not found. Please ensure they are in the correct directories.")
+            console.error(`Error: The directory '${REPORTS_DIR}' or the template 'template.ejs' was not found. Please ensure they are in the correct locations.`)
         } else {
             console.error("An unexpected error occurred:", error)
         }
