@@ -9,7 +9,7 @@
     - type: javascript
       value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
-      value: The model must not call any function. It should explain that it cannot book a conference room because it lacks the necessary tool, but it may offer to create the calendar event.
+      value: The model must not call any function. It should explain that it cannot book a conference room because it lacks the necessary tool, but it may offer to send an email instead.
   metadata:
     conversationId: handling-missing-information
     parameters:
@@ -53,14 +53,14 @@
     - type: javascript
       value: file://scripts/utilities.js:matchFunctionCalls
     - type: llm-rubric
-      value: The model must call the `send_email` function with the appropriate email, subject and body.
+      value: The model must call the `send_email` function with an appropriate subject and body to book 'Conference Room 4B' for a Q3 planning meeting at 10 am tomorrow (July 12, 2025).
   metadata:
     conversationId: handling-missing-information
     parameters:
       - context-application
       - function-calling
       - parameter-extraction
-    context: "The user provides the final pieces of information. The model must now synthesize the entire conversation to make a single, correct function call."
+    context: "The user provides the final pieces of information. The model must now use the conversation history to make a single, correct function call."
 - vars:
     functions: file://scenarios/handling-missing-information/functions.md
     message: file://scenarios/handling-missing-information/outputs/00-email-sent.md

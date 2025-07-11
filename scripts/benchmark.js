@@ -15,25 +15,25 @@ const models = [
   'ollama:chat:gemma3n:e4b-it-q8_0',
   'ollama:chat:gemma3n:e4b-it-fp16',
   'ollama:chat:gemma3:1b',
-  'ollama:chat:gemma3:4b',
-  'ollama:chat:gemma3:12b',
-  'ollama:chat:gemma3:27b',
+  // 'ollama:chat:gemma3:4b',
+  // 'ollama:chat:gemma3:12b',
+  // 'ollama:chat:gemma3:27b',
   'ollama:chat:gemma3:1b-it-qat',
   'ollama:chat:gemma3:1b-it-q4_K_M',
   'ollama:chat:gemma3:1b-it-q8_0',
   'ollama:chat:gemma3:1b-it-fp16',
-  'ollama:chat:gemma3:4b-it-qat',
-  'ollama:chat:gemma3:4b-it-q4_K_M',
-  'ollama:chat:gemma3:4b-it-q8_0',
-  'ollama:chat:gemma3:4b-it-fp16',
-  'ollama:chat:gemma3:12b-it-qat',
-  'ollama:chat:gemma3:12b-it-q4_K_M',
-  'ollama:chat:gemma3:12b-it-q8_0',
-  'ollama:chat:gemma3:12b-it-fp16',
-  'ollama:chat:gemma3:27b-it-qat',
-  'ollama:chat:gemma3:27b-it-q4_K_M',
-  'ollama:chat:gemma3:27b-it-q8_0',
-  'ollama:chat:gemma3:27b-it-fp16',
+  // 'ollama:chat:gemma3:4b-it-qat',
+  // 'ollama:chat:gemma3:4b-it-q4_K_M',
+  // 'ollama:chat:gemma3:4b-it-q8_0',
+  // 'ollama:chat:gemma3:4b-it-fp16',
+  // 'ollama:chat:gemma3:12b-it-qat',
+  // 'ollama:chat:gemma3:12b-it-q4_K_M',
+  // 'ollama:chat:gemma3:12b-it-q8_0',
+  // 'ollama:chat:gemma3:12b-it-fp16',
+  // 'ollama:chat:gemma3:27b-it-qat',
+  // 'ollama:chat:gemma3:27b-it-q4_K_M',
+  // 'ollama:chat:gemma3:27b-it-q8_0',
+  // 'ollama:chat:gemma3:27b-it-fp16',
 ]
 
 function generateModelSlug(modelId) {
@@ -84,9 +84,8 @@ async function runAllTests() {
       const outputPath = path.join(OUTPUT_DIR, `${modelSlug}.json`)
 
       const commandArgs = [
-        'promptfoo',
-        'eval',
-        '--grader', 'google:gemini-2.5-flash',
+        'promptfoo', 'eval', '--verbose',
+        '--grader', 'openai:gpt-4.1-mini',
         '--config', CONFIG_FILE,
         '--output', outputPath
       ]

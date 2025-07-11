@@ -1,7 +1,7 @@
 ```function_spec
 {
-  "name": "list_calendar_events",
-  "description": "Lists events from the user's calendar within a specified date range.",
+  "name": "list_expenses",
+  "description": "Lists expenses from the user's expense record within a specified date range.",
   "parameters": {
     "type": "object",
     "properties": {

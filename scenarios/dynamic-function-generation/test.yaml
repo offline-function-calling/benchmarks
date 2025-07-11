@@ -12,7 +12,7 @@
     - type: javascript
       value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
-      value: The generated code and function specification must match the user's requirements for a 'calculate_lead_score' function and the JSON schema for function specifications.
+      value: The generated code and function specification must match the user's requirements for a 'calculate_lead_score' function and the JSON schema for function specifications. Make sure the logic of the code is correct, and that there are no syntax errors.
   metadata:
     conversationId: dynamic-function-generation
     parameters:
@@ -32,6 +32,7 @@
         - function: calculate_lead_score
           parameters:
             job_title: Product Manager
+            country: Peru
             company_size: 500
   assert:
     - type: javascript

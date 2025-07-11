@@ -51,13 +51,13 @@ async function generateReport() {
         let providers = prompts.map(p => {
             const metrics = p.metrics || {}
             const totalTests = (metrics.testPassCount || 0) + (metrics.testFailCount || 0)
-            const passRate = totalTests > 0 ? (metrics.testPassCount / totalTests) * 100 : 0
+            const scenarioScore = totalTests > 0 ? (metrics.testPassCount / totalTests) : 0
             const totalRequests = metrics.tokenUsage?.numRequests || 1
             const avgLatency = (metrics.totalLatencyMs || 0) / totalRequests
 
             return {
                 ...p,
-                passRate,
+                scenarioScore,
                 avgLatency,
             }
         })
@@ -79,6 +79,7 @@ async function generateReport() {
 
         const stats = {
             providerCount,
+            scenarioCount: 10,
             uniqueParametersCount: uniqueParameters.size,
             totalTests,
             avgLatency: avgStatLatency,
@@ -143,7 +144,7 @@ async function generateReport() {
         }
         console.log("Metadata parameter scores calculated.")
 
-        console.log("Calculating capability score and overall parameter scores...")
+        console.log("Calculating composite score and overall parameter scores...")
         const latencies = providers.map(p => p.avgLatency)
         const minLatency = Math.min(...latencies)
         const maxLatency = Math.max(...latencies)
@@ -156,29 +157,33 @@ async function generateReport() {
             if (scoreValues.length > 0) {
                 overallParamScore = scoreValues.reduce((sum, s) => sum + s, 0) / scoreValues.length
             }
-            provider.overallParamScore = overallParamScore
+            provider.parameterScore = overallParamScore
 
-            const normalizedPassRate = provider.passRate / 100
+            const normalizedScenarioScore = provider.scenarioScore
             const normalizedLatencyScore = (latencyRange > 0) ? (maxLatency - provider.avgLatency) / latencyRange : 1
 
-            const weightPassRate = 0.45
-            const weightParamScore = 0.45
-            const weightLatency = 0.10
+            const weightScenarioScore = 0.48
+            const weightParamScore = 0.48
+            const weightLatency = 0.04
 
-            const finalCapabilityScore =
-                (normalizedPassRate * weightPassRate) +
+            const finalCompositeScore =
+                (normalizedScenarioScore * weightScenarioScore) +
                 (overallParamScore * weightParamScore) +
                 (normalizedLatencyScore * weightLatency)
-            provider.capabilityScore = finalCapabilityScore
+            provider.compositeScore = finalCompositeScore
         }
-        console.log("Capability scores calculated.")
+        console.log("Composite scores calculated.")
 
         const sortedProviders = providers.sort((a, b) => {
-            const scoreDiff = (b.capabilityScore || 0) - (a.capabilityScore || 0)
-            if (scoreDiff !== 0) return scoreDiff
-            return (b.passRate || 0) - (a.passRate || 0)
+            const scenarioScoreDiff = (b.scenarioScore || 0) - (a.scenarioScore || 0)
+            if (scenarioScoreDiff !== 0) return scenarioScoreDiff
+
+            const paramScoreDiff = (b.parameterScore || 0) - (a.parameterScore || 0)
+            if (paramScoreDiff !== 0) return paramScoreDiff
+
+            return (b.avgLatency || 0) - (a.avgLatency || 0)
         })
-        console.log("Sorted providers by capability score.")
+        console.log("Sorted providers by scores.")
 
         const templatePath = path.join(__dirname, 'template.ejs')
         const templateData = {
