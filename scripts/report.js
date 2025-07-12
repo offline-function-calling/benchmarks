@@ -2,26 +2,46 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import ejs from 'ejs'
+import { green, yellow, red, magenta, cyan, bold, gray, underline } from 'kolorist'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const REPORTS_DIR = path.join(__dirname, '../reports')
+const OUTPUTS_DIR = path.join(__dirname, '../outputs')
+
+const log = {
+    info: (message) => console.log(`${cyan('[info]')} ${message.toLowerCase()}`),
+    warn: (message) => console.log(`${yellow('[warn]')} ${message.toLowerCase()}`),
+    error: (message, errorDetails) => {
+        console.error(`${red('[error]')} ${message.toLowerCase()}`)
+        if (errorDetails) console.error(errorDetails)
+    },
+    section: (title) => console.log(bold(underline(`\n${title.toLowerCase()}`))),
+    summary: (label, value) => {
+        const lowerLabel = label.toLowerCase()
+        const padding = ' '.repeat(Math.max(0, 30 - lowerLabel.length))
+        console.log(`${lowerLabel}:${padding}${bold(value)}`)
+    }
+}
 
 async function generateReport() {
-    console.log("Starting leaderboard generation...")
+    console.log(magenta(bold(underline('\nbenchmark report analysis'))))
 
     try {
-        console.log(`Reading and combining reports from: ${REPORTS_DIR}`)
+        log.section('data aggregation')
+        log.info(`reading report files from directory: ${REPORTS_DIR}`)
 
         const reportFiles = await fs.readdir(REPORTS_DIR)
         const jsonFiles = reportFiles.filter(file => path.extname(file).toLowerCase() === '.json')
 
         if (jsonFiles.length === 0) {
-            throw new Error(`No JSON report files found in the directory: ${REPORTS_DIR}`)
+            throw new Error(`no json report files found in the directory: ${REPORTS_DIR}`)
         }
 
         let allPrompts = []
         let allTestCases = []
+        let earliestTimestamp = null
+        let latestTimestamp = null
 
         for (const file of jsonFiles) {
             const filePath = path.join(REPORTS_DIR, file)
@@ -32,16 +52,25 @@ async function generateReport() {
                 if (reportData.results && reportData.results.prompts && reportData.results.results) {
                     allPrompts.push(...reportData.results.prompts)
                     allTestCases.push(...reportData.results.results)
-                    console.log(`Successfully processed and added ${file}`)
+
+                    if (reportData.results.timestamp) {
+                        const currentTimestamp = new Date(reportData.results.timestamp)
+                        if (!earliestTimestamp || currentTimestamp < earliestTimestamp) {
+                            earliestTimestamp = currentTimestamp
+                        }
+                        if (!latestTimestamp || currentTimestamp > latestTimestamp) {
+                            latestTimestamp = currentTimestamp
+                        }
+                    }
                 } else {
-                    console.warn(`Skipping ${file}: does not contain the expected results structure.`)
+                    log.warn(`skipping file '${file}': does not contain the expected results structure.`)
                 }
             } catch (parseError) {
-                console.error(`Error parsing ${file}: ${parseError.message}. Skipping this file.`)
+                log.error(`failed to parse json from file '${file}'. skipping.`, parseError.message)
             }
         }
 
-        console.log(`Successfully combined data from ${jsonFiles.length} report files.`)
+        log.info(`successfully processed and combined data from ${jsonFiles.length} report files.`)
 
         const evalId = `eval-combined-${Date.now().toString(36)}`
         const timestamp = new Date().toISOString()
@@ -62,29 +91,70 @@ async function generateReport() {
             }
         })
 
+        log.section('statistical analysis')
+
         const providerCount = providers.length
         const totalTests = providers.reduce((sum, p) =>
             sum + (p.metrics?.testPassCount || 0) + (p.metrics?.testFailCount || 0) + (p.metrics?.testErrorCount || 0), 0)
 
         const uniqueParameters = new Set()
+        const uniqueScenarios = new Set()
         for (const caseResult of testCases) {
-            const metadataParams = caseResult.testCase?.metadata?.parameters
-            if (Array.isArray(metadataParams)) {
-                metadataParams.forEach(param => uniqueParameters.add(param))
+            const metadata = caseResult.testCase?.metadata
+            if (metadata) {
+                if (Array.isArray(metadata.parameters)) {
+                    metadata.parameters.forEach(param => uniqueParameters.add(param))
+                }
+                if (metadata.conversationId) {
+                    uniqueScenarios.add(metadata.conversationId)
+                }
             }
         }
+        const scenarioCount = uniqueScenarios.size
 
         const totalStatLatency = providers.reduce((sum, p) => sum + p.avgLatency, 0)
         const avgStatLatency = providerCount > 0 ? totalStatLatency / providerCount : 0
 
+        const { totalAssertionInputTokens, totalAssertionOutputTokens } = allPrompts.reduce(
+            (acc, prompt) => {
+                const assertionUsage = prompt.metrics?.tokenUsage?.assertions
+                if (assertionUsage) {
+                    acc.totalAssertionInputTokens += assertionUsage.prompt || 0
+                    acc.totalAssertionOutputTokens += assertionUsage.completion || 0
+                }
+                return acc
+            },
+            { totalAssertionInputTokens: 0, totalAssertionOutputTokens: 0 }
+        )
+
+        const totalAssertionRequests = allTestCases.reduce((sum, caseResult) => {
+            const componentResults = caseResult.gradingResult?.componentResults || []
+            const rubricAssertionsCount = componentResults.filter(c => c.assertion?.type === 'llm-rubric').length
+            return sum + rubricAssertionsCount
+        }, 0)
+
+        let assertionRequestsPerMinute = 0
+        if (earliestTimestamp && latestTimestamp) {
+            const totalDurationMinutes = (latestTimestamp.getTime() - earliestTimestamp.getTime()) / 60000
+            if (totalDurationMinutes > 0) {
+                assertionRequestsPerMinute = totalAssertionRequests / totalDurationMinutes
+            }
+        }
+
         const stats = {
             providerCount,
-            scenarioCount: 10,
+            scenarioCount,
             uniqueParametersCount: uniqueParameters.size,
             totalTests,
             avgLatency: avgStatLatency,
+            totalAssertionTokens: totalAssertionInputTokens + totalAssertionOutputTokens,
+            totalAssertionInputTokens,
+            totalAssertionOutputTokens,
+            totalAssertionRequests,
+            assertionRequestsPerMinute,
         }
-        console.log("Calculated aggregate stats")
+
+        log.info('calculated aggregate statistics.')
 
         const providerTestCases = {}
         for (const caseResult of testCases) {
@@ -96,9 +166,9 @@ async function generateReport() {
             }
             providerTestCases[providerId].push(caseResult)
         }
-        console.log("Processed and aggregated test data")
 
-        console.log("Calculating metadata parameter scores...")
+        log.section('scoring and ranking')
+        log.info('calculating metadata parameter scores...')
         const providerParamScores = {}
         for (const providerId in providerTestCases) {
             const cases = providerTestCases[providerId]
@@ -142,9 +212,8 @@ async function generateReport() {
             }
             providerParamScores[providerId] = normalizedScores
         }
-        console.log("Metadata parameter scores calculated.")
 
-        console.log("Calculating composite score and overall parameter scores...")
+        log.info('calculating composite scores and sorting models...')
         const latencies = providers.map(p => p.avgLatency)
         const minLatency = Math.min(...latencies)
         const maxLatency = Math.max(...latencies)
@@ -172,7 +241,6 @@ async function generateReport() {
                 (normalizedLatencyScore * weightLatency)
             provider.compositeScore = finalCompositeScore
         }
-        console.log("Composite scores calculated.")
 
         const sortedProviders = providers.sort((a, b) => {
             const scenarioScoreDiff = (b.scenarioScore || 0) - (a.scenarioScore || 0)
@@ -183,8 +251,9 @@ async function generateReport() {
 
             return (b.avgLatency || 0) - (a.avgLatency || 0)
         })
-        console.log("Sorted providers by scores.")
+        log.info('model scoring and ranking complete.')
 
+        log.section('report generation')
         const templatePath = path.join(__dirname, 'template.ejs')
         const templateData = {
             evalId,
@@ -197,18 +266,31 @@ async function generateReport() {
         }
 
         const html = await ejs.renderFile(templatePath, templateData)
-        console.log("Rendered HTML from template")
+        log.info('rendered html from ejs template.')
 
-        const outputPath = path.join(__dirname, '../leaderboard.html')
+        const outputPath = path.join(OUTPUTS_DIR, 'leaderboard.html')
         await fs.writeFile(outputPath, html)
 
-        console.log(`Success! Leaderboard saved as leaderboard.html.`)
+        log.info(`html leaderboard saved to: ${outputPath}`)
 
+        log.section('run summary')
+        log.summary('models analyzed', stats.providerCount)
+        log.summary('scenarios run', stats.scenarioCount)
+        log.summary('total tests run', stats.totalTests.toLocaleString())
+        log.summary('average latency (ms)', stats.avgLatency.toFixed(0))
+
+        log.section('assertion metrics')
+        log.summary('total assertion tokens', stats.totalAssertionTokens.toLocaleString())
+        log.summary('  - input (prompt)', stats.totalAssertionInputTokens.toLocaleString())
+        log.summary('  - output (completion)', stats.totalAssertionOutputTokens.toLocaleString())
+        log.summary('total assertion requests', stats.totalAssertionRequests.toLocaleString())
+        log.summary('assertion requests/min', stats.assertionRequestsPerMinute.toFixed(2))
+
+        console.log(green(bold('\nprocess completed successfully.\n')))
     } catch (error) {
+        log.error('a critical error occurred during leaderboard generation.', error.stack)
         if (error.code === 'ENOENT') {
-            console.error(`Error: The directory '${REPORTS_DIR}' or the template 'template.ejs' was not found. Please ensure they are in the correct locations.`)
-        } else {
-            console.error("An unexpected error occurred:", error)
+            log.error(`the directory '${REPORTS_DIR}' or the template 'template.ejs' was not found. please ensure they are in the correct locations.`)
         }
         process.exit(1)
     }

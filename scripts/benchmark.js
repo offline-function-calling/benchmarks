@@ -1,87 +1,85 @@
-import fs from 'fs/promises'
 import path from 'path'
+import fs from 'fs/promises'
+import { createWriteStream } from 'fs'
+
+import yaml from 'js-yaml'
 import { execa } from 'execa'
+import { green, yellow, red, magenta, cyan, bold, underline } from 'kolorist'
 
 const CONFIG_FILE = 'evaluator.yaml'
-const OUTPUT_DIR = 'reports'
+const PROVIDERS_FILE = 'providers.yaml'
+const REPORTS_DIR = 'reports'
+const LOGS_DIR = 'logs'
 
-const models = [
-  'ollama:chat:gemma3n:e2b',
-  'ollama:chat:gemma3n:e4b',
-  'ollama:chat:gemma3n:e2b-it-q4_K_M',
-  'ollama:chat:gemma3n:e2b-it-q8_0',
-  'ollama:chat:gemma3n:e2b-it-fp16',
-  'ollama:chat:gemma3n:e4b-it-q4_K_M',
-  'ollama:chat:gemma3n:e4b-it-q8_0',
-  'ollama:chat:gemma3n:e4b-it-fp16',
-  'ollama:chat:gemma3:1b',
-  'ollama:chat:gemma3:4b',
-  'ollama:chat:gemma3:12b',
-  'ollama:chat:gemma3:27b',
-  'ollama:chat:gemma3:1b-it-qat',
-  'ollama:chat:gemma3:1b-it-q4_K_M',
-  'ollama:chat:gemma3:1b-it-q8_0',
-  'ollama:chat:gemma3:1b-it-fp16',
-  'ollama:chat:gemma3:4b-it-qat',
-  'ollama:chat:gemma3:4b-it-q4_K_M',
-  'ollama:chat:gemma3:4b-it-q8_0',
-  'ollama:chat:gemma3:4b-it-fp16',
-  'ollama:chat:gemma3:12b-it-qat',
-  'ollama:chat:gemma3:12b-it-q4_K_M',
-  'ollama:chat:gemma3:12b-it-q8_0',
-  // 'ollama:chat:gemma3:12b-it-fp16',
-  'ollama:chat:gemma3:27b-it-qat',
-  'ollama:chat:gemma3:27b-it-q4_K_M',
-  // 'ollama:chat:gemma3:27b-it-q8_0',
-  // 'ollama:chat:gemma3:27b-it-fp16',
-]
+const log = {
+    info: (message) => console.log(`${cyan('[info]')} ${message}`),
+    warn: (message) => console.log(`${yellow('[warn]')} ${message}`),
+    success: (message) => console.log(`${green('[success]')} ${message}`),
+    error: (message, errorDetails) => {
+        console.error(`${red('[error]')} ${message}`)
+        if (errorDetails) console.error(errorDetails)
+    },
+    section: (title) => console.log(bold(underline(`\n${title}`))),
+}
 
 function generateModelSlug(modelId) {
   return modelId.replace('ollama:chat:', '').replace(/:/g, '-')
 }
 
 async function runAllTests() {
-  console.log(`Found ${models.length} models to test.`)
+  console.log(magenta(bold(underline('\noffline function calling benchmark\n'))))
 
+  let models
   try {
-    await fs.mkdir(OUTPUT_DIR, { recursive: true })
-    console.log(`Reports will be saved in the '${OUTPUT_DIR}' directory.`)
+    const fileContents = await fs.readFile(PROVIDERS_FILE, 'utf8')
+    models = yaml.load(fileContents)
+    if (!Array.isArray(models) || models.length === 0) {
+      throw new Error('File is empty or not a valid YAML list.')
+    }
   } catch (error) {
-    console.error(`Could not create output directory '${OUTPUT_DIR}':`, error)
-    return
+    log.error(`failed to read '${PROVIDERS_FILE}' - please ensure it exists and is a valid yaml list.`, error.message)
+    process.exit(1)
   }
 
-  // Read the base config file content once.
+  try {
+    await fs.mkdir(REPORTS_DIR, { recursive: true })
+    await fs.mkdir(LOGS_DIR, { recursive: true })
+    log.info(`reports will be saved in '${REPORTS_DIR}'`)
+    log.info(`command logs will be streamed to '${LOGS_DIR}'`)
+  } catch (error) {
+    log.error(`could not create output directories`, error)
+    process.exit(1)
+  }
+
   let baseConfigContent
   try {
     baseConfigContent = await fs.readFile(CONFIG_FILE, 'utf8')
   } catch (error) {
-    console.error(`Fatal: Could not read the config file '${CONFIG_FILE}'. Please make sure it exists.`)
-    return
+    log.error(`failed to read the config file '${CONFIG_FILE}' - please ensure it exists.`, error)
+    process.exit(1)
   }
 
-  // Regex to find the line starting with "providers:" (with optional leading space).
-  // The 'm' flag ensures '^' matches the start of a line, not just the start of the file.
   const providerRegex = /^\s*providers:.*/m
-
   if (!providerRegex.test(baseConfigContent)) {
-    console.error(`Fatal: Could not find a 'providers:' key in '${CONFIG_FILE}'. Script cannot continue.`)
-    return
+    log.error(`could not find a 'providers:' key in '${CONFIG_FILE}'.`)
+    process.exit(1)
   }
+
+  log.info(`found ${models.length} models to test from '${PROVIDERS_FILE}'.`)
 
   for (const [index, modelId] of models.entries()) {
-    console.log('\n' + '-'.repeat(60))
-    console.log(`Starting test ${index + 1}/${models.length} for model: ${modelId}`)
-    console.log('-'.repeat(60))
+    const modelSlug = generateModelSlug(modelId)
+    const outputPath = path.join(REPORTS_DIR, `${modelSlug}.json`)
+    const logPath = path.join(LOGS_DIR, `${modelSlug}.log`)
+
+    log.section(`test ${index + 1}/${models.length}: ${modelId}`)
+
+    const logStream = createWriteStream(logPath)
 
     try {
-      // Replace the old providers line with the new one.
-      const newConfigContent = baseConfigContent.replace(providerRegex, `providers: [${modelId}]`)
+      const newConfigContent = baseConfigContent.replace(providerRegex, `providers: [${JSON.stringify(modelId)}]`) // Use JSON.stringify to handle potential special chars
       await fs.writeFile(CONFIG_FILE, newConfigContent, 'utf8')
-      console.log(`   Updated '${CONFIG_FILE}' to use provider: ${modelId}`)
-
-      const modelSlug = generateModelSlug(modelId)
-      const outputPath = path.join(OUTPUT_DIR, `${modelSlug}.json`)
+      log.info(`updated '${CONFIG_FILE}' for model`)
 
       const commandArgs = [
         'promptfoo', 'eval', '--verbose',
@@ -90,23 +88,31 @@ async function runAllTests() {
         '--output', outputPath
       ]
 
-      console.log(`   Executing: npx ${commandArgs.join(' ')}\n`)
+      log.info(`executing tests for ${modelId}...`)
+      log.info(`streaming output to ${logPath}.`)
 
-      await execa('npx', commandArgs, { stdio: 'inherit' })
+      const childProcess = execa('npx', commandArgs)
 
-      console.log(`\nSuccessfully finished test for ${modelId}.`)
-      console.log(`   Report saved to: ${outputPath}`)
+      childProcess.stdout.pipe(logStream)
+      childProcess.stderr.pipe(logStream)
 
+      await childProcess
+
+      log.success(`finished test for ${modelId}.`)
+      log.success(`report saved to: ${outputPath}.`)
     } catch (error) {
-      console.error(`\nFAILED test for model: ${modelId}`)
-      console.error('   Error details:', error.message)
-      console.log('   Stopping the test suite due to failure.')
+      if (error.exitCode === 100) {
+        log.success(`finished test for ${modelId} with some failures.`)
+        log.success(`report saved to: ${outputPath}.`)
+      } else {
+        log.error(`failed test for model ${modelId}.`, error.message)
+      }
+    } finally {
+        logStream.end()
     }
   }
 
-  console.log('\n' + '*'.repeat(60))
-  console.log('All tests completed or stopped due to failure.')
-  console.log('*'.repeat(60))
+  console.log(green(bold(underline('\nall tests completed.\n'))))
 }
 
 await runAllTests()

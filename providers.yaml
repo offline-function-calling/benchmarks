@@ -1,0 +1,33 @@
+- 'ollama:chat:gemma3n:e2b'
+- 'ollama:chat:gemma3n:e2b-it-q4_K_M'
+- 'ollama:chat:gemma3n:e2b-it-q8_0'
+- 'ollama:chat:gemma3n:e2b-it-fp16'
+
+- 'ollama:chat:gemma3n:e4b'
+- 'ollama:chat:gemma3n:e4b-it-q4_K_M'
+- 'ollama:chat:gemma3n:e4b-it-q8_0'
+- 'ollama:chat:gemma3n:e4b-it-fp16'
+
+- 'ollama:chat:gemma3:1b'
+- 'ollama:chat:gemma3:1b-it-qat'
+- 'ollama:chat:gemma3:1b-it-q4_K_M'
+- 'ollama:chat:gemma3:1b-it-q8_0'
+- 'ollama:chat:gemma3:1b-it-fp16'
+
+- 'ollama:chat:gemma3:4b'
+- 'ollama:chat:gemma3:4b-it-qat'
+- 'ollama:chat:gemma3:4b-it-q4_K_M'
+- 'ollama:chat:gemma3:4b-it-q8_0'
+- 'ollama:chat:gemma3:4b-it-fp16'
+
+- 'ollama:chat:gemma3:12b'
+- 'ollama:chat:gemma3:12b-it-qat'
+- 'ollama:chat:gemma3:12b-it-q4_K_M'
+- 'ollama:chat:gemma3:12b-it-q8_0'
+# - 'ollama:chat:gemma3:12b-it-fp16'
+
+- 'ollama:chat:gemma3:27b'
+- 'ollama:chat:gemma3:27b-it-qat'
+- 'ollama:chat:gemma3:27b-it-q4_K_M'
+# - 'ollama:chat:gemma3:12b-it-q8_0'
+# - 'ollama:chat:gemma3:12b-it-fp16'

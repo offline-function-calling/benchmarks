@@ -1,5 +1,6 @@
 node_modules/
-output/
+outputs/
+logs/
 
 evaluator-*.yaml
 *.log
@@ -7,6 +8,5 @@ evaluator-*.yaml
 .env*
 !.env.example
 
-report.html
 report.json
 leaderboard.html
