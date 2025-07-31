@@ -6,15 +6,14 @@
       value: file://scripts/utilities.js:findFunctionCalls
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
-    - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
       value: The model must not call any function. It should explain that it cannot book a conference room because it lacks the necessary tool, but it may offer to send an email instead.
   metadata:
     conversationId: handling-missing-information
     parameters:
-      - missing-functions
-      - function-selection
+      - [missing-functions]
+      - [no-hallucination]
+      - [function-selection, context-understanding]
     context: "The user asks the model to perform an action (booking a room) for which no function is available. The model must recognize this limitation."
 - vars:
     functions: file://scenarios/handling-missing-information/functions.md
@@ -24,15 +23,14 @@
       value: file://scripts/utilities.js:findFunctionCalls
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
-    - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
       value: The model must not call a function. It should identify the `send_email` tool but recognize that it lacks required parameters (recipient) and must ask the user for this information.
   metadata:
     conversationId: handling-missing-information
     parameters:
-      - missing-parameters
-      - function-selection
+      - [missing-parameters]
+      - [no-hallucination]
+      - [function-selection, missing-parameters, context-understanding]
     context: "Following the new instruction, the model must select a new tool but identify that it is missing the required parameters to execute the call."
 - vars:
     functions: file://scenarios/handling-missing-information/functions.md
@@ -49,17 +47,16 @@
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
     - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
-    - type: javascript
       value: file://scripts/utilities.js:matchFunctionCalls
     - type: llm-rubric
       value: The model must call the `send_email` function with an appropriate subject and body to book 'Conference Room 4B' for a Q3 planning meeting at 10 am tomorrow (July 12, 2025).
   metadata:
     conversationId: handling-missing-information
     parameters:
-      - context-application
-      - function-calling
-      - parameter-extraction
+      - [missing-parameters]
+      - [no-hallucination]
+      - [function-selection, parameter-extraction]
+      - [context-understanding, parameter-transformation]
     context: "The user provides the final pieces of information. The model must now use the conversation history to make a single, correct function call."
 - vars:
     functions: file://scenarios/handling-missing-information/functions.md
@@ -70,12 +67,12 @@
       value: file://scripts/utilities.js:findFunctionCalls
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
-    - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
       value: The model must understand the successful function output and confirm to the user that the email has been sent as requested.
   metadata:
     conversationId: handling-missing-information
     parameters:
-      - output-understanding
+      - [function-calling]
+      - [no-hallucination]
+      - [context-understanding]
     context: "After the function call succeeds, the model must interpret the result and provide a helpful confirmation to the user, concluding the task."

@@ -14,16 +14,13 @@
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
     - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
-    - type: javascript
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: ambiguous-functions
     parameters:
-      - function-selection
-      - handling-ambiguity
-      - parameter-extraction
-      - parameter-transformation
+      - [function-calling]
+      - [no-hallucination]
+      - [function-discovery, function-selection, parameter-extraction, parameter-transformation]
     context: "Faced with multiple product-related functions, the model must select the most appropriate one and infer parameters from ambiguous user input like 'under $100' and 'good reviews'."
 - vars:
     functions: file://scenarios/ambiguous-functions/functions.md
@@ -34,12 +31,12 @@
       value: file://scripts/utilities.js:findFunctionCalls
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
-    - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
       value: The response must present the found headphone options to the user in a helpful, readable format.
   metadata:
     conversationId: ambiguous-functions
     parameters:
-      - output-understanding
+      - [no-hallucination]
+      - [no-hallucination]
+      - [context-understanding]
     context: "The model receives a list of matching products and should present these results to the user in a clear and helpful manner."

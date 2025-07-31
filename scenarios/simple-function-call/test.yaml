@@ -13,15 +13,13 @@
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
     - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
-    - type: javascript
       value: file://scripts/utilities.js:matchFunctionCalls
   metadata:
     conversationId: simple-function-call
     parameters:
-      - function-discovery
-      - parameter-extraction
-      - function-calling
+      - [function-calling]
+      - [no-hallucination]
+      - [function-discovery, parameter-extraction]
     context: "The model must identify the correct function and extract parameters directly from the user's prompt to find the status of a pull request."
 - vars:
     functions: file://scenarios/simple-function-call/functions.md
@@ -32,12 +30,12 @@
       value: file://scripts/utilities.js:findFunctionCalls
     - type: javascript
       value: file://scripts/utilities.js:findFunctionOutputs
-    - type: javascript
-      value: file://scripts/utilities.js:findFunctionSpecifications
     - type: llm-rubric
       value: The response must summarize the PR status in a user-friendly way using the provided function output.
   metadata:
     conversationId: simple-function-call
     parameters:
-      - output-understanding
+      - [no-hallucination]
+      - [no-hallucination]
+      - [context-understanding]
     context: "The model receives the pull request details and must formulate a helpful, user-friendly response based on that data."

@@ -103,7 +103,7 @@ async function generateReport() {
             const metadata = caseResult.testCase?.metadata
             if (metadata) {
                 if (Array.isArray(metadata.parameters)) {
-                    metadata.parameters.forEach(param => uniqueParameters.add(param))
+                    metadata.parameters.flat().forEach(param => uniqueParameters.add(param))
                 }
                 if (metadata.conversationId) {
                     uniqueScenarios.add(metadata.conversationId)
@@ -173,16 +173,34 @@ async function generateReport() {
         for (const providerId in providerTestCases) {
             const cases = providerTestCases[providerId]
             const paramScores = {}
+            
             for (const caseResult of cases) {
-                const score = caseResult.score || 0
-                const metadataParams = caseResult.testCase?.metadata?.parameters
-                if (Array.isArray(metadataParams)) {
-                    for (const paramName of metadataParams) {
-                        if (!paramScores[paramName]) {
-                            paramScores[paramName] = { totalScore: 0, count: 0 }
+                const componentResults = caseResult.gradingResult?.componentResults || []
+                const assertionParams2D = caseResult.testCase?.metadata?.parameters
+
+                if (Array.isArray(componentResults) && Array.isArray(assertionParams2D)) {
+                    const numAssertionsToProcess = Math.min(componentResults.length, assertionParams2D.length)
+
+                    if (componentResults.length > 0 && assertionParams2D.length > 0 && componentResults.length !== assertionParams2D.length) {
+                        log.warn(`mismatch between number of assertions (${componentResults.length}) and parameter groups (${assertionParams2D.length}) for a test case. processing ${numAssertionsToProcess} pairs.`)
+                    }
+
+                    for (let i = 0; i < numAssertionsToProcess; i++) {
+                        const assertionResult = componentResults[i]
+                        const paramsForAssertion = assertionParams2D[i]
+                        const assertionScore = assertionResult.score ?? 0
+
+                        if (Array.isArray(paramsForAssertion)) {
+                            for (const paramName of paramsForAssertion) {
+                                if (typeof paramName === 'string' && paramName.length > 0) {
+                                    if (!paramScores[paramName]) {
+                                        paramScores[paramName] = { totalScore: 0, count: 0 }
+                                    }
+                                    paramScores[paramName].totalScore += assertionScore
+                                    paramScores[paramName].count += 1
+                                }
+                            }
                         }
-                        paramScores[paramName].totalScore += score
-                        paramScores[paramName].count += 1
                     }
                 }
             }

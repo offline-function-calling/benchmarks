@@ -333,7 +333,7 @@
       document.body.appendChild(tooltipEl)
     })
 
-    function escapeHtml(unsafe) {
+    function escapeRawHtml(unsafe) {
       if (typeof unsafe !== 'string') return ''
       return unsafe
         .replace(/&/g, "&amp;")
@@ -346,15 +346,15 @@
     function formatFunctionCall(call) {
       if (!call) return '<em class="text-gray-500">None</em>'
       return `<div class="space-y-3">
-        <div><strong class="text-gray-700 dark:text-gray-300">Function:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">${escapeHtml(call.function)}</code></div>
+        <div><strong class="text-gray-700 dark:text-gray-300">Function:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">${escapeRawHtml(call.function)}</code></div>
         <div><strong class="text-gray-700 dark:text-gray-300">Parameters:</strong></div>
-        <pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-json text-xs">${escapeHtml(JSON.stringify(call.parameters, null, 2))}</code></pre>
+        <pre class="bg-gray-50 dark:bg-black rounded-lg"><code class="language-json text-xs">${escapeRawHtml(JSON.stringify(call.parameters, null, 2))}</code></pre>
       </div>`
     }
 
     function getRawOutputHtml(responseText) {
         if (!responseText) return '<em class="text-gray-500">No output.</em>'
-        return `<pre class="bg-gray-50 dark:bg-black rounded-lg min-w-0 whitespace-pre-wrap"><code class="language-markdown text-xs">${escapeHtml(responseText)}</code></pre>`
+        return `<pre class="bg-gray-50 dark:bg-black rounded-lg min-w-0 whitespace-pre-wrap"><code class="language-markdown text-xs">${escapeRawHtml(responseText)}</code></pre>`
     }
 
     function getActualFunctionCallHtml(responseText) {
@@ -375,7 +375,7 @@
                     htmlParts.push(formatFunctionCall(parsedJson))
                 } catch (e) {
                     const errorHtml = `<div class="text-red-600 font-semibold">Error parsing function call JSON:</div>
-                        <pre class="bg-gray-50 dark:bg-black rounded-lg mt-2"><code class="language-text text-xs">${escapeHtml(jsonString)}</code></pre>`
+                        <pre class="bg-gray-50 dark:bg-black rounded-lg mt-2"><code class="language-text text-xs">${escapeRawHtml(jsonString)}</code></pre>`
                     htmlParts.push(errorHtml)
                 }
             }
@@ -516,7 +516,7 @@
               paramEl.className = 'flex items-center gap-3'
 
               paramEl.innerHTML = `
-                  <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono w-32 truncate text-right">${escapeHtml(paramName)}</code>
+                  <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono w-32 truncate text-right">${escapeRawHtml(paramName)}</code>
                   <div class="${trackClasses}">
                       <div class="h-2.5 rounded-full" style="width: ${score * 100}%; background-color: ${getScoreColor(score)}"></div>
                   </div>
@@ -578,7 +578,7 @@
           const scenarioParams = new Set()
           scenarioCases.forEach(c => {
             const metadataParams = c.testCase?.metadata?.parameters || []
-            metadataParams.forEach(param => scenarioParams.add(param))
+            metadataParams.forEach(paramArray => paramArray.forEach(param => scenarioParams.add(param)))
           })
 
           if (scenarioParams.size > 0) {
@@ -593,7 +593,7 @@
             Array.from(scenarioParams).sort().forEach(param => {
                 const paramBadge = document.createElement('code')
                 paramBadge.className = 'bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md text-xs font-mono text-gray-600 dark:text-gray-300'
-                paramBadge.textContent = escapeHtml(param)
+                paramBadge.textContent = escapeRawHtml(param)
                 paramsContainer.appendChild(paramBadge)
             })
             headerContainer.appendChild(paramsContainer)
@@ -627,7 +627,7 @@
 
             const rawOutputHtml = getRawOutputHtml(c.response?.output)
             const actualFunctionCallHtml = getActualFunctionCallHtml(c.response?.output)
-            const formattedMessage = escapeHtml(c.testCase.vars.message)
+            const formattedMessage = escapeRawHtml(c.testCase.vars.message)
             const context = c.testCase?.metadata?.context
 
             const card = document.createElement('div')
@@ -637,7 +637,7 @@
                 <div class="flex-grow space-y-4">
                   <div>
                     <div class="my-2 flex items-center">${statusBadge} ${latencyHtml}</div>
-                    ${context ? `<p class="text-md text-gray-600 dark:text-gray-400 mb-3">${escapeHtml(context)}</p>` : ''}
+                    ${context ? `<p class="text-md text-gray-600 dark:text-gray-400 mb-3">${escapeRawHtml(context)}</p>` : ''}
 
                     <div class="my-2 bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                       <span class="font-bold text-gray-700 dark:text-gray-300">Prompt</span>
@@ -672,7 +672,7 @@
                   ${!success || hasError ? `
                   <div class="bg-red-50 dark:bg-red-900/20 border ${hasError ? `border-amber-200 dark:border-amber-500/30` : `border-red-200 dark:border-red-500/30`} rounded-lg p-4">
                     <h5 class="font-medium ${hasError ? `text-amber-800 dark:text-amber-400` : `text-red-800 dark:text-red-400`} mb-2">${hasError ? 'Error Message' : 'Failure Reason'}</h5>
-                    <p class="text-sm ${hasError ? `text-amber-700 dark:text-amber-300` : `text-red-700 dark:text-red-300`}">${escapeHtml(c.error || c.gradingResult?.reason || 'No reason provided.')}</p>
+                    <p class="text-sm ${hasError ? `text-amber-700 dark:text-amber-300` : `text-red-700 dark:text-red-300`}">${escapeRawHtml(c.error || c.gradingResult?.reason || 'No reason provided.')}</p>
                   </div>` : ''}
                 </div>
               </div>

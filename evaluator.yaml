@@ -3,7 +3,7 @@ description: Offline Function Calling Benchmarks
 prompts:
   - id: file://prompts/conversation-template.json
     label: function-calling
-providers: ["ollama:chat:gemma3n:e4b-it-q4_K_M"]
+providers: ["ollama:chat:gemma3:27b-it-q4_K_M"]
 
 defaultTest:
   vars:
