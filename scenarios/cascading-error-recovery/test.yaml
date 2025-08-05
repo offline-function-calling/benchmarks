@@ -83,6 +83,6 @@
     conversationId: cascading-error-recovery
     parameters:
       - [function-calling]
-      - [no-hallucinations]
+      - [no-hallucination]
       - [function-selection, context-understanding]
     context: "The user provides the requested username, and the model must use this new information to attempt the final lookup in the LDAP directory."

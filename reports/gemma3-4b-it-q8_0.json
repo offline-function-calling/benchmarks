@@ -5486,7 +5486,7 @@
                 "function-calling"
               ],
               [
-                "no-hallucinations"
+                "no-hallucination"
               ],
               [
                 "function-selection",
@@ -5651,7 +5651,7 @@
               "function-calling"
             ],
             [
-              "no-hallucinations"
+              "no-hallucination"
             ],
             [
               "function-selection",
